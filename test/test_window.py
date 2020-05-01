@@ -1,26 +1,12 @@
-# tkinterx
+import sys
+sys.path.append("../pygui")
 
-[![GitHub issues](https://img.shields.io/github/issues/xinetzone/pychaos)](https://github.com/xinetzone/pychaos/issues) [![GitHub forks](https://img.shields.io/github/forks/xinetzone/pychaos)](https://github.com/xinetzone/pychaos/network) [![GitHub stars](https://img.shields.io/github/stars/xinetzone/pychaos)](https://github.com/xinetzone/pychaos/stargazers) [![GitHub license](https://img.shields.io/github/license/xinetzone/pychaos)](https://github.com/xinetzone/pychaos/blob/master/LICENSE) [![HitCount](http://hits.dwyl.io/xinetzone/pychaos.svg)](http://hits.dwyl.io/xinetzone/pychaos) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cv) ![repo size](https://img.shields.io/github/repo-size/xinetzone/pychaos.svg) [![contributors](https://img.shields.io/github/contributors/xinetzone/pychaos.svg)](https://github.com/xinetzone/pychaos/graphs/contributors) [![watcher](https://img.shields.io/github/watchers/xinetzone/pychaos.svg)](https://github.com/xinetzone/pychaos/watchers)
+import json
 
-Use tkinter to create a handy GUI tool.
+from tkinterx.meta import WindowMeta, ask_window, askokcancel, showwarning
+from tkinter import Tk, StringVar, ttk
 
-## PyPI support available
 
-You can install the latest version using the following command:
-
-```sh
-pip install tkinterx
-```
-
-The following command is used when called:
-
-```python
-import tkinterx
-```
-
-## A sample: Record your personal information
-
-```python
 class Window(WindowMeta):
     def __init__(self, master=None, cnf={}, **kw):
         super().__init__(master, cnf, **kw)
@@ -84,10 +70,3 @@ if __name__ == "__main__":
     root = Root()
     root.geometry('300x200')
     root.mainloop()
-```
-
-Interface presentation:
-
-![Figure 1: record your personal information](images/name_age.png)
-
-For more information: [Chinese Manual](https://www.jianshu.com/nb/45403586).
