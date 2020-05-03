@@ -14,11 +14,10 @@ class GraphMeta(CanvasMeta):
         super().__init__(master, cnf, **kw)
         self._init_set()
         self.create_info_widgets()
-        self.bind('<Motion>', self.update_xy)
         self.master.bind('<F1>', self.clear_all)
         self.master.bind('<Delete>', self.delete_selected)
         self.master.bind('<Control-a>', self.select_all_graph)
-        self.master.bind('<Cancel>', self.cancel_selected)
+        self.bind('<Motion>', self.update_xy)
         self.bind('<1>', self.select_current_graph)
         self.tag_bind('selected', '<ButtonRelease-1>', self.tune_selected)
 
@@ -43,7 +42,7 @@ class GraphMeta(CanvasMeta):
         if xy:
             return self.find_closest(*xy)
 
-    def start_drawing(self, event):
+    def start_record(self, event):
         self.record_bbox[:2] = self.get_canvasxy(event)
         self.xy_var.set(f"Direction Vector: {self.record_bbox}")
 
@@ -58,7 +57,7 @@ class GraphMeta(CanvasMeta):
         return self.find_withtag('current')
 
     def set_select_mode(self, event):
-        self.start_drawing(event)
+        self.start_record(event)
         if self.current_graph_tags:
             self.configure(cursor="target")
         else:
