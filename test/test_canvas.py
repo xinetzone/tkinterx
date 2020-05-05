@@ -18,10 +18,10 @@ def test_Meta():
     self.create_graph('oval', [50, 80, 100, 200], fill='red', **kw)
     self.create_graph('rectangle', [170, 80, 220, 200], fill='yellow', **kw)
     self.create_graph('arc', [180, 100, 250, 260],
-                    tags='test',
-                    fill='lightblue', style='chord', **kw)
+                      tags='test',
+                      fill='lightblue', style='chord', **kw)
     self.create_graph('polygon', [(70, 80), (20, 70),
-                                (30, 90)], fill='purple', **kw)
+                                  (30, 90)], fill='purple', **kw)
     self.layout(row=0, column=0)
     print(self.gettags(1))
     print(self.find_withtag('test'))
@@ -55,6 +55,19 @@ def test_GraphMeta():
     self = GraphMeta(root, background='pink', width=600, height=600)
     self.grid(row=0, column=0)
     self.layout(row=1, column=0)
+    root.mainloop()
+
+
+def test_graph():
+    from tkinterx.graph.drawing import Drawing
+    from tkinter import Tk
+    root = Tk()
+    self = Drawing(root, width=800, height=600, background='lightgray')
+    self.grid(row=0, column=0)
+    self.selector_frame.layout(0, 1)
+    self.layout(1, 0)
+    root.columnconfigure(0, weight=1)
+    root.rowconfigure(0, weight=1)
     root.mainloop()
 
 

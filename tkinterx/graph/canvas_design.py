@@ -1,5 +1,4 @@
-from tkinter import ttk, StringVar, colorchooser
-import json
+from tkinter import ttk, colorchooser
 
 from tkinterx.param import ParamDict
 from tkinterx.graph.canvas import CanvasMeta
@@ -8,73 +7,124 @@ from tkinterx.graph.canvas import CanvasMeta
 class SimpleGraph(CanvasMeta):
     color = ParamDict()
     shape = ParamDict()
+    fill = ParamDict()
+    width = ParamDict()
 
-    def __init__(self, master, shape, color, cnf={}, **kw):
+    def __init__(self, master, shape, color, width=1, fill=None, cnf={}, **kw):
         '''The base class of all graphics frames.
 
-        :param shape: 'point', 'circle', 'square', 'rectangle',
-             'oval', 'line', 'arc'(That is, segment), 'polygon'.
+        :param shape: 'rectangle', 'oval', 'line', 'arc'(That is, segment), 'polygon'.
+
+        Example
+        ============
+        from tkinter import Tk
+        from tkinterx.graph.canvas_design import SimpleGraph
+        root = Tk()
+        self = SimpleGraph(root, 'rectangle', 'yellow', width=1, fill=None, background='pink')
+        self.add_row([25, 25, 40, 40], 10, 20)
+        self.fill = 'blue'
+        self.add_column([40, 80, 100, 100], 5, 30, tags='TY')
+        self.grid(row=0, column=0)
+        self.layout(row=1, column=0)
+        root.mainloop()
         '''
         super().__init__(master, cnf, **kw)
         self.color = color
         self.shape = shape
+        self.width = width
+        self.fill = fill
 
-    def draw(self, direction, width=1, tags=None, **kw):
-        return self.create_graph(self.shape, direction, self.color, width, tags, **kw)
+    def draw(self, direction, tags=None, **kw):
+        return self.create_graph(self.shape, direction, self.color, self.width, tags, fill=self.fill, **kw)
 
     @property
     def default_tags(self):
         return f"graph {self.color} {self.shape}"
 
-    def add_row(self, direction, num, stride=10, width=1, tags=None, **kw):
+    def add_row(self, direction, num, stride=10, tags=None, **kw):
         x0, y0, x1, y1 = direction
-        stride = x1 - x0 + stride
-        for k in range(num):
-            direction = [x0+stride*k, y0, x1+stride*k, y1]
-            self.draw(direction, width=width, tags=tags, **kw)
+        for _ in range(num):
+            x0 += stride
+            x1 += stride
+            direction = (x0, y0, x1, y1)
+            self.draw(direction, tags, **kw)
 
-    def add_column(self, direction, num, stride=5, width=1, tags=None, **kw):
+    def add_column(self, direction, num, stride=5, tags=None, **kw):
         x0, y0, x1, y1 = direction
-        stride = y1 - y0 + stride
-        for k in range(num):
-            direction = [x0, y0+stride*k, x1, y1+stride*k]
-            self.draw(direction, width=width, tags=tags, **kw)
+        for _ in range(num):
+            y0 += stride
+            y1 += stride
+            direction = (x0, y0, x1, y1)
+            self.draw(direction, tags, **kw)
 
 
-class SelectorMeta(SimpleGraph):
-    '''A selection icon that sets the shape and color of the graphic.
-
-    Example:
-    ======================
-    from tkinter import Tk
-    root = Tk()
-    select = SelectorMeta(root)
-    select.grid()
-    root.mainloop()
-    '''
-    colors = 'red', 'blue', 'black', 'purple', 'green', 'orange'  # 'skyblue'
-    shapes = 'rectangle', 'oval', 'line', 'oval_point', 'rectangle_point'
-
-    def __init__(self, master, shape, color, cnf={}, **kw):
+class RegularGraph(SimpleGraph):
+    def __init__(self, master, shape, color, width=1, fill=None, cnf={}, **kw):
         '''The base class of all graphics frames.
+        :param shape: 'circle', 'square'.
 
-        :param master: a widget of tkinter or tkinter.ttk.
+        Example:
+        =============
+        root = Tk()
+        self = RegularGraph(root, 'circle', 'yellow', width=1, fill=None, background='pink')
+        self.fill = 'red'
+        self.draw([140, 140], 40, tags='DF', activedash=7)
+        self.add_row([75, 45], 20, 10)
+        self.fill = 'blue'
+        self.add_column([40, 80], 20, 5)
+        self.grid(row=0, column=0)
+        self.layout(row=1, column=0)
+        root.mainloop()
         '''
-        super().__init__(master, shape, color, cnf, **kw)
-        self.start, self.end = 15, 50
-        self.info_var = StringVar()
-        self.update_info()
-        ttk.Style(self).configure("BW.TButton",
-                                  foreround="purple", font='Times 10')
-        self.custom_color_button = ttk.Button(
-            self, text='Custom', style="BW.TButton", command=self.custom_color)
-        self.create_color()
-        self.create_shape()
+        super().__init__(master, shape, color, width, fill, cnf, **kw)
 
-    def update_info(self, *args):
-        '''Update info information.'''
-        text = f"{self.color} {self.shape}"
-        self.info_var.set(text)
+    def draw(self, center, radius, tags=None, **kw):
+        if self.shape == 'circle':
+            return self.create_circle(center, radius, self.color, self.width, tags, fill=self.fill, **kw)
+        elif self.shape == 'square':
+            return self.create_square(center, radius, self.color, self.width, tags, fill=self.fill, **kw)
+
+    def add_row(self, center, radius, num, stride=10, tags=None, **kw):
+        x0, y0 = center
+        for _ in range(num):
+            x0 += stride
+            self.draw((x0, y0), radius, tags=tags, **kw)
+
+    def add_column(self, center, radius, num, stride=5, tags=None, **kw):
+        x0, y0 = center
+        for _ in range(num):
+            y0 += stride
+            self.draw((x0, y0), radius, tags=tags, **kw)
+
+
+class SelectorMeta(CanvasMeta):
+    colors = 'red', 'blue', 'black', 'purple', 'green', 'orange'  # 'skyblue'
+    shapes = 'rectangle', 'oval', 'line', 'point'
+    color = ParamDict()
+    shape = ParamDict()
+
+    def __init__(self, master, shape='rectangle', color='blue', cnf={}, **kw):
+        '''A selection icon that sets the shape and color of the graphic.
+
+        Example:
+        ======================
+        from tkinter import Tk
+        root = Tk()
+        select = SelectorMeta(root, background='pink')
+        select.grid()
+        root.mainloop()
+        '''
+        super().__init__(master, cnf, **kw)
+        self.shape = shape
+        self.color = color
+        self.x, self.y = 10, 20
+        self.radius = 15
+        self.custom_color_button = ttk.Button(self, text='Custom',
+                                              width=7,
+                                              style="BW.TButton",
+                                              command=self.custom_color)
+        self.create_colors(self.x, self.y)
+        self.create_shapes(self.x, self.y+self.radius*3)
 
     def custom_color(self, *args):
         # Pop-up color selection dialog box
@@ -82,41 +132,36 @@ class SelectorMeta(SimpleGraph):
                                              title="Please choose a color", color=self.color)
         if select_color:
             self.color = select_color[1]
-        self.update_info()
 
-    def create_color(self):
-        '''Set the color selector'''
-        self.create_text((self.start, self.start),
-                         text='color', font='Times 15', anchor='w')
-        x0, y0, x1, y1 = self.start+10, self.start-10, self.end, self.end-20
-        for k, color in enumerate(SelectorMeta.colors):
-            tags = f"color {color}"
-            t = 7+30*(k+1)
-            direction = x0+t, y0, x1+t, y1
-            self.draw_draph(direction, width=2, tags=tags, fill=color)
-        self.create_window((x0+30*(k+2)+14, y0+10),
+    def create_colors(self, x, y):
+        self.create_text((x, y), text='color', font='Times 15', anchor='w')
+        x0 = self.radius + self.x*3
+        stride = self.radius*2 + 5
+        for color in self.colors:
+            x0 += stride
+            self.create_circle((x0, y), self.radius,
+                               fill=color, color='yellow', tags=color)
+        self.create_window((x0+self.radius+5, y),
                            window=self.custom_color_button, anchor='w')
 
-    def create_shape(self):
-        '''Set the shape selector'''
-        self.create_text((self.start, self.start+27),
-                         text='shape', font='Times 15', anchor='w')
-        x0, y0, x1, y1 = self.start+18, self.start+20, self.end+8, self.end+10
-        for k, shape in enumerate(SelectorMeta.shapes):
-            t = 30*(k+1)
-            direction = x0+t, y0, x1+t, y1
-            fill = 'blue' if 'point' in shape else 'white'
-            width = 10 if shape == 'line' else 1
-            kw = {
-                'width': width,
-                'fill': fill,
-                'tags': f"shape {shape}"
-            }
-            self.draw_graph(shape.split('_')[0], direction, 'blue', **kw)
+    def create_shapes(self, x, y):
+        self.create_text((x, y), text='shape', font='Times 15', anchor='w')
+        x += self.radius * 2
+        for shape in self.shapes:
+            x += self.radius * 2 + 5
+            fill = 'white' if shape in ['rectangle', 'oval'] else 'blue'
+            width = 2 if shape in ['rectangle', 'oval'] else 10
+            if shape != 'point':
+                bbox = [x-self.radius, y-self.radius,
+                        x+self.radius, y+self.radius]
+                self.create_graph(shape, bbox, fill=fill,
+                                  tags=shape, width=width)
+            else:
+                self.create_square_point([x, y], fill, width, tags=shape)
 
 
 class Selector(SelectorMeta):
-    def __init__(self, master, shape, color, cnf={}, **kw):
+    def __init__(self, master, shape='rectangle', color='blue', cnf={}, **kw):
         '''Events that bind colors and shapes
         '''
         super().__init__(master, shape, color, cnf, **kw)
@@ -130,12 +175,10 @@ class Selector(SelectorMeta):
 
     def update_color(self, new_color):
         self.color = new_color
-        self.update_info()
 
     def update_shape(self, new_shape):
         '''Update graph_type information.'''
         self.shape = new_shape
-        self.update_info()
 
     def color_bind(self, canvas, color):
         canvas.tag_bind(color, '<1>', lambda e: self.update_color(color))
@@ -143,55 +186,3 @@ class Selector(SelectorMeta):
     def shape_bind(self, canvas, shape):
         canvas.tag_bind(shape, '<1>',
                         lambda e: self.update_shape(shape))
-
-
-class SelectorFrame(ttk.Frame):
-    '''Binding the left mouse button function of the graphics selector to achieve the color and
-        shape of the graphics change.
-
-    Example:
-    ===============================================
-    from tkinter import Tk
-    root = Tk()
-    self = SelectorFrame(root, 'rectangle', 'yellow')
-    self.layout()
-    root.mainloop()
-    '''
-
-    def __init__(self, master=None, shape='rectangle', color='blue', **kw):
-        '''The base class of all graphics frames.
-
-        :param master: a widget of tkinter or tkinter.ttk.
-        :param graph_type: The initial shape value of the graph.
-        :param color: The initial color value of the graph.
-        '''
-        super().__init__(master, **kw)
-        self._selector = Selector(
-            self, shape, color, background='lightgreen', width=360, height=60)
-        self.create_info()
-        self._selector.info_var.trace_add('write', self.update_select)
-
-    def create_info(self):
-        self.info_var = StringVar()
-        self.update_select()
-        self.info_entry = ttk.Entry(self, textvariable=self.info_var, width=25)
-        self.info_entry['state'] = 'readonly'
-
-    def update_select(self, *args):
-        self.info_var.set(self._selector.info_var.get())
-
-    def save_label(self):
-        info = f"{self._selector.color} {self._selector.shape}"
-        with open('cat.json', 'w') as fp:
-            json.dump(info, fp)
-
-    def layout(self, row=0, column=1):
-        '''The layout's internal widget.'''
-        self.grid(row=row, column=column, sticky='nwes')
-        self._selector.grid(row=0, column=0, sticky='we')
-        self.info_entry.grid(row=1, column=0, sticky='we')
-
-    def layout_pack(self):
-        '''The layout's internal widget.'''
-        self._selector.pack(side='left', fill='y')
-        self.info_entry.pack(side='left', fill='y')
