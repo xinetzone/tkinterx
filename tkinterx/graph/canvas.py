@@ -1,6 +1,7 @@
 '''Some of the actions related to the graph.
 '''
 from tkinter import Canvas, ttk, StringVar
+from ..tools.helper import StatusTool
 
 
 class CanvasMeta(Canvas):
@@ -102,48 +103,75 @@ class CanvasMeta(Canvas):
 class GraphMeta(CanvasMeta):
     def __init__(self, master=None, cnf={}, **kw):
         '''
+        属性
+        =====
+        record_bbox: [x0, y0, x1, y1]，其中 (x0, y0) 为鼠标单击左键时的 canvas 坐标，当释放鼠标时恢复为 ['none']*2
+            (x1, y1) 为鼠标在画布移动时的 canavas 坐标
         '''
         super().__init__(master, cnf, **kw)
         self.record_bbox = ['none']*4
-        self.xy_var = StringVar()
-        self.xy_label = ttk.Label(self.master, textvariable=self.xy_var)
-        self.graph_state = 'drawing'
-
-    def bind_tune(self):
-        self.unbind('<1>')
-        self.unbind('<Motion>')
-        self.unbind('<ButtonRelease-1>')
-        self.bind('<1>', self.select_current_graph)
-        self.bind('<Motion>', self.update_xy)
-        self.tag_bind('selected', '<ButtonRelease-1>', self.tune_selected)
-
-    def bind_drawing(self):
-        self.unbind('<1>')
-        self.unbind('<Motion>')
-        self.unbind('<ButtonRelease-1>')
-        self.bind('<1>', self.start_record)
-        self.bind('<Motion>', self.refresh_graph)
-        self.bind('<ButtonRelease-1>', self.finish_drawing)
-
-    def select_current_graph(self, event):
-        self.set_select_mode(event)
-        self.addtag_withtag('selected', 'current')
+        self.xy_status = StatusTool(master, 'bbox: ')
 
     def get_canvasxy(self, event):
+        '''返回事件的 canvas 坐标'''
         return self.canvasx(event.x), self.canvasy(event.y)
+
+    def start_record(self, event):
+        '''开始记录点击鼠标时的 canvas 坐标'''
+        self.record_bbox[:2] = self.get_canvasxy(event)
+        self.xy_status.var.set(f"{self.record_bbox}")
+
+    def select_current_graph(self, event):
+        self.start_record(event)
+        current_graph_tag = self.find_withtag('current')
+        if current_graph_tag:
+            self.configure(cursor="target")
+            self.addtag_withtag('selected', 'current')
+        else:
+            self.configure(cursor="arrow")
 
     def update_xy(self, event):
         self.record_bbox[2:] = self.get_canvasxy(event)
-        #self.xy_var.set(f"Direction Vector: {self.record_bbox}")
-        self.xy_var.set(f"{self.record_bbox}")
+        self.xy_status.var.set(f"{self.record_bbox}")
 
-    def start_record(self, event):
-        self.record_bbox[:2] = self.get_canvasxy(event)
-        self.xy_var.set(f"{self.record_bbox}")
+    @property
+    def strides(self):
+        record_bbox = self.record_bbox
+        if 'none' not in record_bbox:
+            x0, y0, x1, y1 = record_bbox
+            return x1 - x0, y1 - y0
+
+    def bind_selected(self):
+        self.bind('<1>', self.select_current_graph)
+        self.bind('<Motion>', self.update_xy)
+        self.tag_bind('selected', '<ButtonRelease-1>', self.move_selected)
 
     def reset(self):
         self.record_bbox[:2] = ['none']*2
         self.configure(cursor="arrow")
+
+    def cancel_selected(self, event):
+        self.dtag('selected')
+        self.reset()
+
+    def move_selected(self, event=None):
+        self.move('selected', *self.strides)
+        self.cancel_selected(event)
+
+    def layout(self, row=0, column=0):
+        self.xy_status.grid(row=row, column=column)
+
+
+class GraphDrawing(GraphMeta):
+    def __init__(self, master=None, cnf={}, **kw):
+        '''
+        '''
+        super().__init__(master, cnf, **kw)
+
+    def bind_drawing(self):
+        self.bind('<1>', self.start_record)
+        self.bind('<Motion>', self.refresh_graph)
+        self.bind('<ButtonRelease-1>', self.finish_drawing)
 
     def mouse_draw_graph(self, graph_type, color='blue', width=1, tags=None, **kw):
         if graph_type == 'point':
@@ -164,29 +192,3 @@ class GraphMeta(CanvasMeta):
         self.update_xy(event)
         self.after(30, lambda: self.drawing(
             graph_type, color, width=2, tags='temp', dash=10, **kw))
-
-    def set_select_mode(self, event):
-        self.start_record(event)
-        if self.current_graph_tag:
-            self.configure(cursor="target")
-        else:
-            self.configure(cursor="arrow")
-
-    @property
-    def strides(self):
-        record_bbox = self.record_bbox
-        if 'none' not in record_bbox:
-            x0, y0, x1, y1 = record_bbox
-            return x1 - x0, y1 - y0
-
-    @property
-    def current_graph_tag(self):
-        return self.find_withtag('current')
-
-    def tune_selected(self, event=None):
-        self.move('selected', *self.strides)
-        self.cancel_selected(event)
-
-    def cancel_selected(self, event):
-        self.dtag('selected')
-        self.configure(cursor="arrow")

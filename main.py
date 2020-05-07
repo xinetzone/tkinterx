@@ -1,7 +1,7 @@
 from tkinter import Tk
 
-from tkinterx.graph.canvas import CanvasMeta
 from tkinterx.graph.drawing import Drawing
+
 
 class GraphWindow(Tk):
     def __init__(self, **kw):
@@ -16,14 +16,15 @@ class GraphWindow(Tk):
             self.canvas.bind_drawing()
         else:
             self.on_tune = True
-            self.canvas.bind_tune()
-            
-    
+            self.canvas.bind_selected()
+
     def layout(self):
         self.canvas.layout()
 
-root = GraphWindow()
-root.columnconfigure(0, weight=1)
-root.rowconfigure(0, weight=1)
-root.layout()
-root.mainloop()
+
+if __name__ == "__main__":
+    root = GraphWindow()
+    root.columnconfigure(0, weight=1)
+    root.rowconfigure(0, weight=1)
+    root.layout()
+    root.mainloop()
