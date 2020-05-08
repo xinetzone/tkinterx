@@ -8,12 +8,24 @@ class Drawing(GraphDrawing):
         '''
         '''
         super().__init__(master, cnf, **kw)
+        self._selected_tags = set()
         self.create_frame()
         self.bind_drawing()
         self.bind_master()
 
+    @property
+    def selected_tags(self):
+        return self._selected_tags
+
+    @selected_tags.setter
+    def selected_tags(self, tags):
+        if tags == 'current':
+            self._selected_tags = self.find_withtag(tags)
+        else:
+            self._selected_tags = tags
+
     def bind_master(self):
-        self.master.bind('<F1>', self.clear_all)
+        self.master.bind('<F1>', self.clear_graph)
         self.master.bind('<Delete>', self.delete_selected)
         self.master.bind('<Control-a>', self.select_all_graph)
         self.master.bind('<Up>', lambda event: self.move_graph(event, 0, -1))
@@ -21,23 +33,20 @@ class Drawing(GraphDrawing):
         self.master.bind('<Left>', lambda event: self.move_graph(event, -1, 0))
         self.master.bind('<Right>', lambda event: self.move_graph(event, 1, 0))
 
-    def clear_all(self, event):
-        self.delete('all')
+    def clear_graph(self, event=None):
+        self.delete('graph')
 
     def delete_selected(self, event):
-        self.delete('current')
+        self.delete(self.selected_tags)
 
     def select_all_graph(self, event):
         self.set_select_mode(event)
-        self.addtag_withtag('selected', 'all')
+        self.addtag_withtag('selected', 'graph')
 
     def create_frame(self):
         self.frame = ttk.Frame(self.master, width=200, height=200)
         self.selector = Selector(
             self.frame, background='pink', width=350, height=90)
-        # self.notebook = ttk.Notebook(
-        #     self.frame, width=200, height=90, padding=(5, 5, 5, 5))
-        # self.annotation = ttk.Frame(self.notebook, padding=(5, 5, 5, 5))
 
     @property
     def shape(self):
@@ -48,7 +57,8 @@ class Drawing(GraphDrawing):
         return self.selector.color
 
     def finish_drawing(self, event):
-        self.drawing(self.shape, self.color, width=1, tags=None)
+        graph_id = self.drawing(self.shape, self.color, width=1, tags=None)
+        self._selected_tags.add(graph_id)
         self.reset()
 
     def refresh_graph(self, event):
@@ -63,8 +73,7 @@ class Drawing(GraphDrawing):
             return self.find_closest(*xy, halo=10)
 
     def move_graph(self, event, x, y):
-        graph_id = self.closest_graph_id
-        self.move(graph_id, x, y)
+        self.move(self.selected_tags, x, y)
 
     def layout(self):
         self.grid(row=0, column=0, sticky='nesw')

@@ -142,7 +142,10 @@ class GraphMeta(CanvasMeta):
             return x1 - x0, y1 - y0
 
     def bind_selected(self):
-        self.bind('<1>', self.select_current_graph)
+        self.unbind('<1>')
+        self.unbind('<Motion>')
+        self.unbind('<1>')
+        self.bind('<ButtonRelease-1>', self.select_current_graph)
         self.bind('<Motion>', self.update_xy)
         self.tag_bind('selected', '<ButtonRelease-1>', self.move_selected)
 
@@ -169,6 +172,9 @@ class GraphDrawing(GraphMeta):
         super().__init__(master, cnf, **kw)
 
     def bind_drawing(self):
+        self.unbind('<1>')
+        self.unbind('<Motion>')
+        self.unbind('<ButtonRelease-1>')
         self.bind('<1>', self.start_record)
         self.bind('<Motion>', self.refresh_graph)
         self.bind('<ButtonRelease-1>', self.finish_drawing)

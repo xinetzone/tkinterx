@@ -54,6 +54,12 @@ class ImageLoader:
 
     @property
     def current_path(self):
+        current_id = self.current_id
+        num = len(self)
+        if current_id < -num:
+            self.current_id = -num
+        elif current_id >= num:
+            self.current_id = num-1
         path = self._root / self.names[self.current_id]
         return path.as_posix()
 

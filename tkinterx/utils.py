@@ -35,7 +35,7 @@ class FileFrame(ttk.LabelFrame):
 
 class GridLayout:
     def __init__(self, master=None, **kw):
-        pass
+        NotImplemented
 
     def layout_row(self, row=0, *row_widget):
         '''
@@ -49,7 +49,6 @@ class GridLayout:
             self.layout_row(row+start, *row_widget)
 
 
-
 class FileNotebook(ttk.Notebook, GridLayout):
     def __init__(self, master=None, **kw):
         '''
@@ -57,28 +56,19 @@ class FileNotebook(ttk.Notebook, GridLayout):
         =============
         root = Tk()
         self = FileNotebook(root, width=200, height=100, padding=(5, 5, 5, 5))
-        image_frame = self.add_frame(text='Image')
-        annotation_frame = self.add_frame(text='Annotation')
-        prev_button = ttk.Button(image_frame, text='Prev')
-        next_button = ttk.Button(image_frame, text='Next')
-        self.layout_pairs(prev_button, next_button, row=1)
+        self.add_frame([['Load', 'Save'], ['Prev', 'Next']], 'Image', start=0)
+        self.add_frame([['Load', 'Save']], 'Annotation', start=0)
         self.grid()
         root.mainloop()
         '''
         super().__init__(master, **kw)
 
-    def add_frame(self, text, row=0, is_init_set=True, **kw):
-        frame = ttk.Frame(self, **kw)
-        self.add(frame, text=text)
-        if is_init_set:
-            load_button, save_button = self._init_set(frame, row)
-            self.layout_row(0, load_button, save_button)
-            return frame, load_button, save_button
-        else:
-            return frame
+    def add_row_button(self, frame, *names):
+        return [ttk.Button(frame, text=name)for name in names]
 
-    def _init_set(self, frame, row=0):
-        save_button = ttk.Button(frame, text='Save')
-        load_button = ttk.Button(frame, text='Load')
-        return load_button, save_button
-        
+    def add_frame(self, names, tab_name, start=0):
+        frame = ttk.Frame(self)
+        widgets = [self.add_row_button(frame, *name) for name in names]
+        self.add(frame, text=tab_name)
+        self.layout(widgets, start)
+        return frame, widgets
