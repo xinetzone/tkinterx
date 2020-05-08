@@ -1,6 +1,8 @@
+from PIL import ImageTk
 from tkinter import ttk
 from .canvas import GraphDrawing
 from .canvas_design import Selector
+from ..param import ParamDict
 
 
 class Drawing(GraphDrawing):
@@ -8,21 +10,9 @@ class Drawing(GraphDrawing):
         '''
         '''
         super().__init__(master, cnf, **kw)
-        self._selected_tags = set()
         self.create_frame()
         self.bind_drawing()
         self.bind_master()
-
-    @property
-    def selected_tags(self):
-        return self._selected_tags
-
-    @selected_tags.setter
-    def selected_tags(self, tags):
-        if tags == 'current':
-            self._selected_tags = self.find_withtag(tags)
-        else:
-            self._selected_tags = tags
 
     def bind_master(self):
         self.master.bind('<F1>', self.clear_graph)
@@ -36,8 +26,18 @@ class Drawing(GraphDrawing):
     def clear_graph(self, event=None):
         self.delete('graph')
 
+    @property
+    def selected_current_graph(self):
+        tags = self.gettags('current')
+        graph_ids = set(self.find_withtag('current'))
+        if 'background' in tags:
+            bbox = self.bbox('background')
+            graph_ids = set(self.find_enclosed(*bbox)) - graph_ids
+        return tuple(graph_ids)
+
+
     def delete_selected(self, event):
-        self.delete(self.selected_tags)
+        self.delete(self.selected_current_graph)
 
     def select_all_graph(self, event):
         self.set_select_mode(event)
@@ -73,13 +73,28 @@ class Drawing(GraphDrawing):
             return self.find_closest(*xy, halo=10)
 
     def move_graph(self, event, x, y):
-        self.move(self.selected_tags, x, y)
+        self.move(self.selected_current_graph, x, y)
 
     def layout(self):
         self.grid(row=0, column=0, sticky='nesw')
         self.xy_status.grid(row=1, column=0, sticky='nesw')
         self.frame.grid(row=2, column=0, sticky='nesw')
         self.selector.layout(row=0, column=0)
+
+
+class ImageCanvas(Drawing):
+    image_path = ParamDict()
+    def __init__(self, master, image_path=None, cnf={}, **kw):
+        super().__init__(master, cnf, **kw)
+        self.image_path = image_path
+        if self.image_path:
+            self.image = ImageTk.PhotoImage(file=self.image_path)
+            self.create_background(0, 0)
+        
+    def create_background(self, x, y, **kw):
+        self.delete('background')
+        self.image = ImageTk.PhotoImage(file=self.image_path)
+        return self.create_image(x, y, image=self.image, tags='background', **kw)
 
 
 class GraphCanvas(Drawing):

@@ -67,19 +67,12 @@ class ImageLoader:
     def current_name(self):
         return self[self.current_id]
 
-    def path2image(self, path):
-        return Image.open(path)
-
-    def image2tk(self, image):
-        return ImageTk.PhotoImage(image)
-
-    @property
-    def current_image(self):
-        return Image.open(self.current_path)
+    def path2tk(self, path):
+        return ImageTk.PhotoImage(file=path)
 
     @property
     def current_image_tk(self):
-        return self.image2tk(self.current_image)
+        return self.path2tk(self.current_path)
 
     def update_image(self):
         path = self.current_path

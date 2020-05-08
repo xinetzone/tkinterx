@@ -1,12 +1,12 @@
 from tkinter import ttk, filedialog, StringVar
 
 from .graph.canvas_design import Selector
-from .graph.drawing import Drawing
+from .graph.drawing import ImageCanvas
 from .image_utils import ImageLoader
 from .utils import save_bunch, load_bunch, mkdir, FileFrame, FileNotebook
 
 
-class Graph(Drawing):
+class Graph(ImageCanvas):
     def __init__(self, master=None, cnf={}, **kw):
         super().__init__(master, cnf, **kw)
         self.min_size = (10, 10)
@@ -67,12 +67,18 @@ class Graph(Drawing):
     def load_images(self, *args):
         #self.image_names = filedialog.askopenfilenames(filetypes=[("All files", "*.*"), ("Save files", "*.png")])
         root = filedialog.askdirectory()
-        self.bunch['root'] = root
-        self.draw_image(root)
+        if root:
+            self.bunch['root'] = root
+            self.draw_image(root)
+
+    def update_background(self, x, y, **kw):
+        self.image_loader.update_image()
+        self.image_path = self.image_loader.current_path
+        self.create_background(x, y, anchor='nw', **kw)
 
     def draw_image(self, root):
         self.image_loader = ImageLoader(root)
-        self.image_loader.create_image(self, 0, 0, anchor='nw', state='disabled')
+        self.update_background(0, 0)
 
     def bunch2params(self, bunch):
         params = {}
@@ -111,14 +117,14 @@ class Graph(Drawing):
         self.delete('image')
         if self.image_loader:
             self.image_loader.current_id += 1
-            self.image_loader.create_image(self, 0, 0, anchor='nw')
+            self.update_background(0, 0)
             self.draw_current_cats()
 
     def prev_image(self):
         self.delete('image')
         if self.image_loader:
             self.image_loader.current_id -= 1
-            self.image_loader.create_image(self, 0, 0, anchor='nw')
+            self.update_background(0, 0)
             self.draw_current_cats()
 
     def get_graph(self, tags):
@@ -149,13 +155,16 @@ class Graph(Drawing):
 
     def load_graph(self):
         self.bunch = load_bunch('data/annotations.json')
-        root = self.bunch['root']
-        self.image_loader = ImageLoader(root)
-        self.image_names = [
-            f"{root}/{image_name}" for image_name in self.bunch if image_name != root]
-        self.image_loader.current_id = 0
-        self.draw_image(root)
-        self.draw_current_cats()
+        root = self.bunch.get('root')
+        if root:
+            self.image_loader = ImageLoader(root)
+            self.image_names = [
+                f"{root}/{image_name}" for image_name in self.bunch if image_name != root]
+            self.image_loader.current_id = 0
+            self.draw_image(root)
+            self.draw_current_cats()
+        else:
+            self.draw_graph(self.bunch)
 
 
 class ScrollableDrawing(Graph):
@@ -190,165 +199,164 @@ class ScrollableDrawing(Graph):
         self.xy_status.pack(side='top', fill='y')
 
 
-class GraphTool(ScrollableDrawing):
-    def __init__(self, master=None, cnf={}, **kw):
-        super().__init__(master, cnf, **kw)
-        self.page_var = StringVar()
-        self.jump_stride_var = StringVar()
-        self.jump_stride_var.set(1)
-        self.create_notebook()
-        self.image_loader = None
-        self.page_num = 1
-        self.master.bind('<Return>', self.update_page)
-        self.master.bind('<Control-KeyPress-s>', self.save_rectangle)
-        self.bunch = {}
-        self._selected_tags = set()
+# class GraphTool(ScrollableDrawing):
+#     def __init__(self, master=None, cnf={}, **kw):
+#         super().__init__(master, cnf, **kw)
+#         self.page_var = StringVar()
+#         self.jump_stride_var = StringVar()
+#         self.jump_stride_var.set(1)
+#         self.create_notebook()
+#         self.image_loader = None
+#         self.page_num = 1
+#         self.master.bind('<Return>', self.update_page)
+#         self.master.bind('<Control-KeyPress-s>', self.save_rectangle)
+#         self._selected_tags = set()
 
-    def show_current_graph(self, *args):
-        graph_id = self.find_withtag('current')
-        clostest_graph_id = self.find_closest(self.x, self.y, start=2)
-        print(self.x, self.y, graph_id, clostest_graph_id)
+#     def show_current_graph(self, *args):
+#         graph_id = self.find_withtag('current')
+#         clostest_graph_id = self.find_closest(self.x, self.y, start=2)
+#         print(self.x, self.y, graph_id, clostest_graph_id)
 
-    def create_notebook(self):
-        current_page_label = ttk.Label(self.image_frame, text='current page')
-        current_page_entry = ttk.Entry(
-            self.image_frame, width='7', textvariable=self.page_var)
-        jump_label = ttk.Label(self.image_frame, text='jump stride')
-        jump_entry = ttk.Entry(self.image_frame, width='7',
-                               textvariable=self.jump_stride_var)
-        self.notebook.layout([[jump_label, jump_entry]], start=3)
+#     def create_notebook(self):
+#         current_page_label = ttk.Label(self.image_frame, text='current page')
+#         current_page_entry = ttk.Entry(
+#             self.image_frame, width='7', textvariable=self.page_var)
+#         jump_label = ttk.Label(self.image_frame, text='jump stride')
+#         jump_entry = ttk.Entry(self.image_frame, width='7',
+#                                textvariable=self.jump_stride_var)
+#         self.notebook.layout([[jump_label, jump_entry]], start=3)
 
-    def set_image(self):
-        self.image_loader.current_id = int(self.page_var.get())
-        self.image_loader.create_image(self, 0, 0, anchor='nw')
+#     def set_image(self):
+#         self.image_loader.current_id = int(self.page_var.get())
+#         self.update_background(0, 0)
 
-    def load_images(self, *args):
-        root = filedialog.askdirectory()
-        if root:
-            self.image_loader = ImageLoader(root)
-            self.page_num = len(self.image_loader)
-            self.page_var.set(0)
-            self.set_image()
-            self.bunch['root'] = root
+#     def load_images(self, *args):
+#         #self.image_names = filedialog.askopenfilenames(filetypes=[("All files", "*.*"), ("Save files", "*.png")])
+#         root = filedialog.askdirectory()
+#         if root:
+#             self.bunch['root'] = root
+#             self.page_num = len(self.image_loader)
+#             self.page_var.set(0)
+#             self.set_image()
+#             self.draw_image(root)
 
-    def get_page(self):
-        return self.page_var.get(), self.jump_stride_var.get()
+#     def get_page(self):
+#         return self.page_var.get(), self.jump_stride_var.get()
 
-    def update_current_page(self, current_page):
-        if isinstance(current_page, str):
-            current_page = int(current_page)
-        if -self.page_num < current_page < self.page_num:
-            self.page_var.set(current_page)
+#     def update_current_page(self, current_page):
+#         if isinstance(current_page, str):
+#             current_page = int(current_page)
+#         if -self.page_num <= current_page < self.page_num:
+#             self.page_var.set(current_page)
 
-    def update_page(self, *args):
-        if self.image_loader:
-            current_page, jump_stride = self.get_page()
-            if '' not in [current_page, jump_stride]:
-                self.update_current_page(current_page)
-                self.set_image()
+#     def update_page(self, *args):
+#         if self.image_loader:
+#             current_page, jump_stride = self.get_page()
+#             if '' not in [current_page, jump_stride]:
+#                 self.update_current_page(current_page)
+#                 self.set_image()
 
-    def next_page(self, *args):
-        current_page, jump_stride = self.get_page()
-        if '' not in [current_page, jump_stride]:
-            current_page = int(current_page) + int(jump_stride)
-            self.update_current_page(current_page)
-            self.set_image()
+#     def next_page(self, *args):
+#         current_page, jump_stride = self.get_page()
+#         if '' not in [current_page, jump_stride]:
+#             current_page = int(current_page) + int(jump_stride)
+#             self.update_current_page(current_page)
+#             self.set_image()
 
-    def prev_page(self, *args):
-        current_page, jump_stride = self.get_page()
-        if '' not in [current_page, jump_stride]:
-            current_page = int(current_page) - int(jump_stride)
-            self.update_current_page(current_page)
-            self.set_image()
+#     def prev_page(self, *args):
+#         current_page, jump_stride = self.get_page()
+#         if '' not in [current_page, jump_stride]:
+#             current_page = int(current_page) - int(jump_stride)
+#             self.update_current_page(current_page)
+#             self.set_image()
 
-    def get_graph(self, tags):
-        cats = {}
-        for graph_id in self.find_withtag(tags):
-            tags = self.gettags(graph_id)
-            bbox = self.bbox(graph_id)
-            cats[graph_id] = {'tags': tags, 'bbox': bbox}
-        return cats
+#     def get_graph(self, tags):
+#         cats = {}
+#         for graph_id in self.find_withtag(tags):
+#             tags = self.gettags(graph_id)
+#             bbox = self.bbox(graph_id)
+#             cats[graph_id] = {'tags': tags, 'bbox': bbox}
+#         return cats
 
-    def set_path(self, tags):
-        if tags == 'all':
-            return 'data/normal.json'
-        else:
-            return 'data/annotations.json'
+#     def set_path(self, tags):
+#         if tags == 'all':
+#             return 'data/normal.json'
+#         else:
+#             return 'data/annotations.json'
 
-    def save_graph(self, tags):
-        graph = self.get_graph(tags)
-        mkdir('data')
-        path = self.set_path(tags)
-        if self.image_loader:
-            current_image_path = self.image_loader.current_path
-            if current_image_path:
-                self.bunch.update({self.image_loader.current_name: graph})
-                save_bunch(self.bunch, path)
-        else:
-            save_bunch(graph, path)
+#     def save_graph(self, tags):
+#         graph = self.get_graph(tags)
+#         mkdir('data')
+#         path = self.set_path(tags)
+#         if self.image_loader:
+#             current_image_path = self.image_loader.current_path
+#             if current_image_path:
+#                 self.bunch.update({self.image_loader.current_name: graph})
+#                 save_bunch(self.bunch, path)
+#         else:
+#             save_bunch(graph, path)
 
-    def save_rectangle(self, *args):
-        self.save_graph('rectangle')
+#     def save_rectangle(self, *args):
+#         self.save_graph('rectangle')
 
-    def load_graph(self):
-        self.bunch = load_bunch('data/annotations.json')
-        root = self.bunch.get()
-        if root:
-            
-            self.image_loader = ImageLoader(root)
-            self.image_names = [
-                f"{root}/{image_name}" for image_name in self.bunch if image_name != root]
-            self.image_loader.current_id = 0
-            self.create_image(root)
-            self.reload_graph(self.bunch[self.image_loader.current_name])
-        else:
-            self.bunch = load_bunch('data/normal.json')
-            self.load_normal()
+#     def load_graph(self):
+#         self.bunch = load_bunch('data/annotations.json')
+#         root = self.bunch.get('root')
+#         if root:
+#             self.image_loader = ImageLoader(root)
+#             self.image_names = [
+#                 f"{root}/{image_name}" for image_name in self.bunch if image_name != root]
+#             self.image_loader.current_id = 0
+#             self.create_image(root)
+#             self.reload_graph(self.bunch[self.image_loader.current_name])
+#         else:
+#             self.bunch = load_bunch('data/normal.json')
+#             self.load_normal()
 
-    def load_normal(self):
-        self.bunch = load_bunch('data/normal.json')
-        self.reload_graph(self.bunch)
+#     def load_normal(self):
+#         self.bunch = load_bunch('data/normal.json')
+#         self.reload_graph(self.bunch)
 
-    def bunch2params(self, bunch):
-        params = {}
-        for graph_id, cats in bunch.items():
-            tags = cats['tags']
-            color, shape = tags
-            graph_type = shape.split('_')[0]
-            bbox = cats['bbox']
-            params[graph_id] = {'tags': tags, 'color': color,
-                                'graph_type': graph_type, 'direction': bbox}
-        return params
+#     def bunch2params(self, bunch):
+#         params = {}
+#         for graph_id, cats in bunch.items():
+#             tags = cats['tags']
+#             color, shape = tags
+#             graph_type = shape.split('_')[0]
+#             bbox = cats['bbox']
+#             params[graph_id] = {'tags': tags, 'color': color,
+#                                 'graph_type': graph_type, 'direction': bbox}
+#         return params
 
-    def reload_graph(self, cats):
-        params = self.bunch2params(cats)
-        self.clear_graph()
-        for param in params.values():
-            self.draw_graph(**param)
+#     def reload_graph(self, cats):
+#         params = self.bunch2params(cats)
+#         self.clear_graph()
+#         for param in params.values():
+#             self.draw_graph(**param)
 
-    def clear_graph(self, *args):
-        self.delete('all')
+#     def clear_graph(self, *args):
+#         self.delete('all')
         
-    def delete_graph(self, *args):
-        xy = self.x, self.y
-        graph_id = self.find_closest(*xy)
-        self.delete(graph_id)
+#     def delete_graph(self, *args):
+#         xy = self.x, self.y
+#         graph_id = self.find_closest(*xy)
+#         self.delete(graph_id)
 
-    def select_graph(self, event, tags):
-        self.configure(cursor="target")
-        self.update_xy(event)
-        if tags == 'current':
-            self.selected_tags = self.find_withtag(tags)
-        else:
-            self.selected_tags = tags
-        print(self.selected_tags)
+#     def select_graph(self, event, tags):
+#         self.configure(cursor="target")
+#         self.update_xy(event)
+#         if tags == 'current':
+#             self.selected_tags = self.find_withtag(tags)
+#         else:
+#             self.selected_tags = tags
+#         print(self.selected_tags)
 
-    def layout(self):
-        self.frame.pack(side='top', anchor='w')
-        self.selector.layout(row=0, column=0)
-        self.notebook.grid(row=0, column=1, sticky='nesw')
-        self.scroll_x.pack(side='top', fill='x')
-        self.pack(side='top', expand='yes', fill='both')
-        self.scroll_y.pack(side='left', fill='y')
-        self.xy_status.pack(side='top', fill='y')
+#     def layout(self):
+#         self.frame.pack(side='top', anchor='w')
+#         self.selector.layout(row=0, column=0)
+#         self.notebook.grid(row=0, column=1, sticky='nesw')
+#         self.scroll_x.pack(side='top', fill='x')
+#         self.pack(side='top', expand='yes', fill='both')
+#         self.scroll_y.pack(side='left', fill='y')
+#         self.xy_status.pack(side='top', fill='y')
 

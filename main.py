@@ -1,13 +1,13 @@
 from tkinter import Tk
 from tkinterx.graph.drawing import Drawing
-from tkinterx.window import GraphTool
+from tkinterx.window import ScrollableDrawing
 
 
 class GraphWindow(Tk):
     def __init__(self, **kw):
         super().__init__(**kw)
         self.on_tune = False
-        self.canvas = GraphTool(self, width=600, height=600, background='pink')
+        self.canvas = ScrollableDrawing(self, width=600, height=600, background='pink')
         self.bind('<Control-t>', self.bind_graph)
 
     def bind_graph(self, event):
