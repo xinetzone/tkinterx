@@ -13,18 +13,6 @@ class Graph(ImageCanvas):
         self.bunch = {}
         self.image_names = ()
         self._image_loader = None
-        self._selected_tags = set()
-
-    @property
-    def selected_tags(self):
-        return self._selected_tags
-
-    @selected_tags.setter
-    def selected_tags(self, tags):
-        if tags == 'current':
-            self._selected_tags = self.find_withtag(tags)
-        else:
-            self._selected_tags = tags
 
     def drawing(self, graph_type, color, width=1, tags=None, **kw):
         self.delete('temp')
@@ -210,7 +198,6 @@ class ScrollableDrawing(Graph):
 #         self.page_num = 1
 #         self.master.bind('<Return>', self.update_page)
 #         self.master.bind('<Control-KeyPress-s>', self.save_rectangle)
-#         self._selected_tags = set()
 
 #     def show_current_graph(self, *args):
 #         graph_id = self.find_withtag('current')

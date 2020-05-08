@@ -72,6 +72,14 @@ class Drawing(GraphDrawing):
         if xy:
             return self.find_closest(*xy, halo=10)
 
+    def select_current_graph(self, event):
+        self.start_record(event)
+        if self.selected_current_graph:
+            self.configure(cursor="target")
+            self.addtag_withtag('selected', self.selected_current_graph)
+        else:
+            self.configure(cursor="arrow")
+
     def move_graph(self, event, x, y):
         self.move(self.selected_current_graph, x, y)
 
