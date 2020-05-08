@@ -24,6 +24,7 @@ class GraphWindow(Tk):
 
 def test_window():
     root = GraphWindow()
+    root.geometry('800x800')
     # root.columnconfigure(0, weight=1)
     # root.rowconfigure(0, weight=1)
     root.layout()

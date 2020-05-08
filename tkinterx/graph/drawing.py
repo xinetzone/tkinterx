@@ -35,12 +35,11 @@ class Drawing(GraphDrawing):
             graph_ids = set(self.find_enclosed(*bbox)) - graph_ids
         return tuple(graph_ids)
 
-
     def delete_selected(self, event):
         self.delete(self.selected_current_graph)
 
     def select_all_graph(self, event):
-        self.set_select_mode(event)
+        #self.set_select_mode(event)
         self.addtag_withtag('selected', 'graph')
 
     def create_frame(self):
@@ -58,7 +57,6 @@ class Drawing(GraphDrawing):
 
     def finish_drawing(self, event):
         graph_id = self.drawing(self.shape, self.color, width=1, tags=None)
-        self._selected_tags.add(graph_id)
         self.reset()
 
     def refresh_graph(self, event):
@@ -171,5 +169,5 @@ class GraphCanvas(Drawing):
         self.cancel_selected(event)
 
     def select_current_graph(self, event):
-        self.set_select_mode(event)
+        #self.set_select_mode(event)
         self.addtag_withtag('selected', self.closest_graph_id)
