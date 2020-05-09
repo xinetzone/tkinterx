@@ -1,5 +1,5 @@
 from .canvas import GraphMeta
-from .canvas_design import SelectorFrame
+from .canvas_design import Selector
 
 
 class Drawing(GraphMeta):
@@ -11,7 +11,7 @@ class Drawing(GraphMeta):
         :param master: a widget of tkinter or tkinter.ttk.
         '''
         super().__init__(master, cnf, **kw)
-        self.selector_frame = SelectorFrame(master, 'rectangle', 'blue')
+        self.selector = Selector(master, 'rectangle', 'blue')
         self.bind('<Motion>', self.refresh_graph)
         self.bind('<ButtonRelease-1>', self.finish_drawing)
 
@@ -23,11 +23,11 @@ class Drawing(GraphMeta):
 
     @property
     def color(self):
-        return self.selector_frame._selector.color
+        return self.selector.color
 
     @property
     def shape(self):
-        return self.selector_frame._selector.shape
+        return self.selector.shape
 
     def drawing(self, tags=None, width=1, **kw):
         self.delete('temp')
