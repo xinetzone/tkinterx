@@ -12,7 +12,7 @@ class GraphWindow(Tk):
         self.canvas = ScrollableDrawing(
             self, width=600, height=600, background='pink')
         self.bind('<Control-t>', self.bind_graph)
-        self.canvas.bind('<Control-e>', self.ask_cat)
+        self.canvas.bind('<3>', self.ask_cat)
 
     def bind_graph(self, event):
         if self.on_tune:

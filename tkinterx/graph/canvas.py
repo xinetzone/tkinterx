@@ -144,8 +144,8 @@ class GraphMeta(CanvasMeta):
     def bind_selected(self):
         self.unbind('<1>')
         self.unbind('<Motion>')
-        self.unbind('<1>')
-        self.bind('<1>', self.select_current_graph)
+        self.unbind('<ButtonRelease-1>')
+        self.bind('<ButtonRelease-1>', self.select_current_graph)
         self.bind('<Motion>', self.update_xy)
         self.tag_bind('selected', '<ButtonRelease-1>', self.move_selected)
 

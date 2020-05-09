@@ -72,10 +72,4 @@ class FileNotebook(ttk.Notebook, GridLayout):
         self.add(frame, text=tab_name)
         self.layout(widgets, start)
         return frame, widgets
-
-    def frame_add_entry(self, frame, name, start):
-        label = ttk.Label(frame, text=name)
-        cat_var = StringVar()
-        entry = ttk.Entry(frame, textvariable=cat_var)
-        self.layout([[label, entry]], start)
-        return cat_var
+        
