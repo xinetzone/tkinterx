@@ -27,7 +27,8 @@ class ImageLoader:
     def names(self):
         png_names = self.get_names('*.png')
         jpg_names = self.get_names('*.jpg')
-        names = png_names | jpg_names
+        bmp_names = self.get_names('*.bmp')
+        names = png_names | jpg_names | bmp_names
         return sorted(names)
 
     def __getitem__(self, index):

@@ -51,13 +51,14 @@ class Drawing(GraphDrawing):
         self.addtag_withtag('selected', 'graph')
 
     def scale_graph(self, event, strides):
-        x0, y0, x1, y1 = self.bbox('current')
-        print(x0, y0, x1, y1)
-        x0 += strides[0]+1
-        y0 += strides[1]+1
-        x1 += strides[2]-1
-        y1 += strides[3]-1
-        self.coords(self.selected_current_graph, *[x0, y0, x1, y1])
+        bbox = self.bbox('current')
+        if bbox:
+            x0, y0, x1, y1 = bbox
+            x0 += strides[0]+1
+            y0 += strides[1]+1
+            x1 += strides[2]-1
+            y1 += strides[3]-1
+            self.coords(self.selected_current_graph, *[x0, y0, x1, y1])
 
 
     def create_frame(self):
@@ -121,71 +122,79 @@ class ImageCanvas(Drawing):
         return self.create_image(x, y, image=self.image, tags='background', **kw)
 
 
-class GraphCanvas(Drawing):
-    def __init__(self, master=None, cnf={}, **kw):
-        '''
-        '''
-        super().__init__(master, cnf, **kw)
-        self.min_size = (10, 10)
-        #self.tag_bind('corner_point', '<ButtonRelease-1>', self.tune_corner_point)
+# class GraphCanvas(Drawing):
+#     def __init__(self, master=None, cnf={}, **kw):
+#         '''
+#         '''
+#         super().__init__(master, cnf, **kw)
+#         self.min_size = (10, 10)
+#         #self.tag_bind('corner_point', '<ButtonRelease-1>', self.tune_corner_point)
 
-    def drawing(self, graph_type, color, width=1, tags=None, **kw):
-        self.delete('temp')
-        if 'none' not in self.record_bbox:
-            x0, y0, x1, y1 = self.record_bbox
-            stride_x = x1 - x0
-            stride_y = y1 - y0
-            cond_x = stride_x > self.min_size[0]
-            cond_y = stride_y > self.min_size[1]
-            if (cond_x and cond_y) or graph_type in ['line', 'point']:
-                return self.mouse_draw_graph(graph_type, color, width, tags, activedash=10, **kw)
+#     def drawing(self, graph_type, color, width=1, tags=None, **kw):
+#         self.delete('temp')
+#         if 'none' not in self.record_bbox:
+#             x0, y0, x1, y1 = self.record_bbox
+#             stride_x = x1 - x0
+#             stride_y = y1 - y0
+#             cond_x = stride_x > self.min_size[0]
+#             cond_y = stride_y > self.min_size[1]
+#             if (cond_x and cond_y) or graph_type in ['line', 'point']:
+#                 return self.mouse_draw_graph(graph_type, color, width, tags, activedash=10, **kw)
 
-    def finish_drawing(self, event):
-        graph_id = self.drawing(self.shape, self.color, width=1, tags=None)
-        if graph_id:
-            record_bbox = self.bbox(graph_id)
-            if self.shape not in ['point', 'line']:
-                for point in self.get_corner_points(record_bbox):
-                    self.create_circle(
-                        point, radius=3, fill='yellow', tags=f'corner_point_{graph_id}')
-        self.reset()
+#     def finish_drawing(self, event):
+#         graph_id = self.drawing(self.shape, self.color, width=1, tags=None)
+#         if graph_id:
+#             record_bbox = self.bbox(graph_id)
+#             if self.shape not in ['point', 'line']:
+#                 for point in self.get_corner_points(record_bbox):
+#                     self.create_circle(
+#                         point, radius=3, fill='yellow', tags=f'corner_point_{graph_id}')
+#         self.reset()
 
-    def get_corner_points(self, record_bbox):
-        if 'none' not in record_bbox:
-            x0, y0, x1, y1 = record_bbox
-            return [x0, y0], [x1, y0], [x1, y1], [x0, y1]
+#     def get_corner_points(self, record_bbox):
+#         if 'none' not in record_bbox:
+#             x0, y0, x1, y1 = record_bbox
+#             return [x0, y0], [x1, y0], [x1, y1], [x0, y1]
 
-    def delete_corner_points(self, event):
-        self.after(100, lambda: self.delete('corner_point'))
+#     def delete_corner_points(self, event):
+#         self.after(100, lambda: self.delete('corner_point'))
 
-    def tune_selected(self, event=None):
-        strides = self.strides
-        self.move('selected', *strides)
-        graph_id = self.find_withtag('selected')
-        self.move('corner_point', *strides)
-        self.cancel_selected(event)
+#     def tune_selected(self, event=None):
+#         strides = self.strides
+#         self.move('selected', *strides)
+#         graph_id = self.find_withtag('selected')
+#         self.move('corner_point', *strides)
+#         self.cancel_selected(event)
 
-    def tune_corner_point(self, event):
-        graph_ids = self.find_withtag('corner_point')
-        current_id = self.find_withtag('current')
-        graph = self.find_below('current')
-        if current_id in graph_ids:
-            a, b, c, d = self.bbox(current_id)
-            center_x = (a + c)/2
-            center_y = (b + d)/2
-            x0, y0, x1, y1 = self.bbox(graph)
-            x = x0 if center_x - x0 < 5 else x1
-            y = y0 if center_y - y0 < 5 else y1
-            print(x, y)
-            #self.coords(graph, )
-            self.move('current', *self.strides)
-            self.tune_selected(event)
+#     def tune_corner_point(self, event):
+#         graph_ids = self.find_withtag('corner_point')
+#         current_id = self.find_withtag('current')
+#         graph = self.find_below('current')
+#         if current_id in graph_ids:
+#             a, b, c, d = self.bbox(current_id)
+#             center_x = (a + c)/2
+#             center_y = (b + d)/2
+#             x0, y0, x1, y1 = self.bbox(graph)
+#             x = x0 if center_x - x0 < 5 else x1
+#             y = y0 if center_y - y0 < 5 else y1
+#             print(x, y)
+#             #self.coords(graph, )
+#             self.move('current', *self.strides)
+#             self.tune_selected(event)
 
-    def finish_corner_point(self, event=None):
-        self.move('selected', *self.strides)
-        self.delete('corner_point')
-        self.cancel_selected(event)
+#     def finish_corner_point(self, event=None):
+#         self.move('selected', *self.strides)
+#         self.delete('corner_point')
+#         self.cancel_selected(event)
 
-    def select_current_graph(self, event):
-        #self.set_select_mode(event)
-        self.addtag_withtag('selected', self.closest_graph_id)
+#     # def select_current_graph(self, event):
+#     #     #self.set_select_mode(event)
+#     #     self.addtag_withtag('selected', self.closest_graph_id)
+
+#     # def select_current_graph(self, event):
+#     #     self.start_record(event)
+#     #     if self.selected_current_graph:
+#     #         self.configure(cursor="target")
+#     #         self.addtag_withtag('selected', self.selected_current_graph)
+#     #     else:
+#     #         self.configure(cursor="arrow")
