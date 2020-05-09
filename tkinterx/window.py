@@ -166,8 +166,8 @@ class ScrollableDrawing(Graph):
         self.update_idletasks()
 
     def _set_scroll(self):
-        self.scroll_x = ttk.Scrollbar(self, orient='horizontal')
-        self.scroll_y = ttk.Scrollbar(self, orient='vertical')
+        self.scroll_x = ttk.Scrollbar(self.master, orient='horizontal')
+        self.scroll_y = ttk.Scrollbar(self.master, orient='vertical')
 
     def _scroll_command(self):
         self.scroll_x['command'] = self.xview
@@ -181,10 +181,11 @@ class ScrollableDrawing(Graph):
         self.frame.pack(side='top', anchor='w')
         self.selector.layout(row=0, column=0)
         self.notebook.grid(row=0, column=1, sticky='nesw')
+        self.xy_status.pack(side='top', fill='x')
         self.scroll_x.pack(side='top', fill='x')
-        self.pack(side='top', expand='yes', fill='both')
         self.scroll_y.pack(side='left', fill='y')
-        self.xy_status.pack(side='top', fill='y')
+        self.pack(side='right', expand='yes', fill='both')
+        
 
 
 # class GraphTool(ScrollableDrawing):

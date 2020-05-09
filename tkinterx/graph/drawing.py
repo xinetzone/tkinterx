@@ -22,6 +22,14 @@ class Drawing(GraphDrawing):
         self.master.bind('<Down>', lambda event: self.move_graph(event, 0, 1))
         self.master.bind('<Left>', lambda event: self.move_graph(event, -1, 0))
         self.master.bind('<Right>', lambda event: self.move_graph(event, 1, 0))
+        self.master.bind('<Control-Up>', lambda event: self.scale_graph(event, [0, -1, 0, 0]))
+        self.master.bind('<Control-Down>', lambda event: self.scale_graph(event, [0, 1, 0, 0]))
+        self.master.bind('<Control-Left>', lambda event: self.scale_graph(event, [-1, 0, 0, 0]))
+        self.master.bind('<Control-Right>', lambda event: self.scale_graph(event, [1, 0, 0, 0]))
+        self.master.bind('<Control-Shift-Up>', lambda event: self.scale_graph(event, [0, 0, 0, -1]))
+        self.master.bind('<Control-Shift-Down>', lambda event: self.scale_graph(event, [0, 0, 0, 1]))
+        self.master.bind('<Control-Shift-Left>', lambda event: self.scale_graph(event, [0, 0, -1, 0]))
+        self.master.bind('<Control-Shift-Right>', lambda event: self.scale_graph(event, [0, 0, 1, 0]))
 
     def clear_graph(self, event=None):
         self.delete('graph')
@@ -41,6 +49,16 @@ class Drawing(GraphDrawing):
     def select_all_graph(self, event):
         #self.set_select_mode(event)
         self.addtag_withtag('selected', 'graph')
+
+    def scale_graph(self, event, strides):
+        x0, y0, x1, y1 = self.bbox('current')
+        print(x0, y0, x1, y1)
+        x0 += strides[0]+1
+        y0 += strides[1]+1
+        x1 += strides[2]-1
+        y1 += strides[3]-1
+        self.coords(self.selected_current_graph, *[x0, y0, x1, y1])
+
 
     def create_frame(self):
         self.frame = ttk.Frame(self.master, width=200, height=200)
