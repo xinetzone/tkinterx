@@ -119,3 +119,19 @@ class WindowMeta(Toplevel):
 
     def create_widget(self):
         NotImplemented
+
+
+class PopupLabel(WindowMeta):
+    def __init__(self, master=None, cnf={}, **kw):
+        super().__init__(master, cnf, **kw)
+
+    def create_widget(self):
+        self.add_row('Please enter the label: ', 'label')
+
+    def run(self):
+        self.withdraw()
+        label = self.table['label']
+        if '' in [label]:
+            showwarning(self)
+        else:
+            askokcancel(self, message='Do you want to confirm the submission?')
