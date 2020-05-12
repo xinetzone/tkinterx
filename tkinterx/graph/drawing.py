@@ -1,6 +1,7 @@
 from PIL import ImageTk
 from tkinter import ttk
 from .canvas import GraphDrawing
+from .canvas_design import Selector
 from ..param import ParamDict
 
 
@@ -70,21 +71,50 @@ class DrawingMeta(GraphDrawing):
         self.move(self.selected_current_graph, x, y)
 
 class Drawing(DrawingMeta):
-    shape = ParamDict()
-    color = ParamDict()
-    def __init__(self, master=None, shape='rectangle', color='blue', cnf={}, **kw):
+    def __init__(self, master=None, cnf={}, **kw):
         '''
         '''
         super().__init__(master, cnf, **kw)
-        self.shape = shape
-        self.color = color
-        #self.master.bind('<Control-s>', lambda event: self.save_graph('rectangle', event))
+        # self.shape = shape
+        # self.color = color
+        self.create_frame()
+    
+    def create_frame(self):
+        self.frame = ttk.Frame(self.master, width=200, height=200)
+        self.selector = Selector(self.frame, background='skyblue', width=350, height=90)
+
+    @property
+    def shape(self):
+        return self.selector.shape
+
+    @property
+    def color(self):
+        return self.selector.color
 
     def finish_drawing(self, event):
-        graph_id = self.drawing(self.shape, self.color, width=1, tags=None)
+        graph_id = self.drawing(self.shape, self.color, width=1, tags=None, activewidth=3)
         self.reset()
 
     def refresh_graph(self, event):
         self.update_xy(event)
         self.after(30, lambda: self.drawing(
-            self.shape, self.color, width=2, tags='temp', dash=10))
+            self.shape, self.color, width=3, tags='temp', dash=10))
+
+    def layout(self, row=0, column=0):
+        self.frame.grid(row=row, column=column, sticky='nesw')
+        self.selector.grid(row=0, column=0)
+
+
+class ImageCanvas(Drawing):
+    image_path = ParamDict()
+    def __init__(self, master, image_path=None, cnf={}, **kw):
+        super().__init__(master, cnf, **kw)
+        self.image_path = image_path
+        if self.image_path:
+            self.image = ImageTk.PhotoImage(file=self.image_path)
+            self.create_background(0, 0)
+        
+    def create_background(self, x, y, **kw):
+        self.delete('background')
+        self.image = ImageTk.PhotoImage(file=self.image_path)
+        return self.create_image(x, y, image=self.image, tags='background', **kw)

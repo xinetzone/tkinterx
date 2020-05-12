@@ -12,11 +12,6 @@ class CanvasMeta(Canvas):
         '''
         super().__init__(master, cnf, **kw)
 
-    def layout(self, row=0, column=0):
-        '''Layout graphic elements with Grid'''
-        # Layout canvas space
-        self.grid(row=row, column=column, sticky='nwes')
-
     def create_graph(self, graph_type, direction, color='blue', width=1, tags=None, **kwargs):
         '''Draw basic graphic elements.
 
