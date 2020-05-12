@@ -1,13 +1,91 @@
 from tkinter import ttk, filedialog, StringVar
 
 from .graph.canvas_design import Selector
-from .graph.drawing import ImageCanvas
+from .graph.drawing import Drawing
 from .image_utils import ImageLoader
 from .param import ParamDict
+from .meta import Table
 from .utils import save_bunch, load_bunch, mkdir, FileFrame, FileNotebook
 
 
-class Graph(ImageCanvas):
+class ImageCanvas(Drawing):
+    def __init__(self, master=None, cnf={}, **kw):
+        super().__init__(master, cnf, **kw)
+        self.notebook = FileNotebook(
+            self.frame, width=200, height=100, padding=(5, 5, 5, 5))
+        self.create_image_loader()
+
+    def create_image_loader(self):
+        # self.annotation_frame, self.annotation_buttons = self.notebook.add_frame(
+        #     [['Load', 'Save']], 'Annotation')
+        self.image_frame = ttk.Frame(self.notebook)
+        self.table = Table(self.image_frame)
+        self.table.add_row('image_dir', 'image_dir:', width=14)
+        self.table.add_row('image_id', 'image_id:', width=7)
+        self.table.add_row('bbox_id', 'bbox_id:', width=7)
+        self.prev_image_button = ttk.Button(
+            self.image_frame, text='prev', width=7)
+        self.next_image_button = ttk.Button(
+            self.image_frame, text='next', width=7)
+        self.notebook.add(self.image_frame, text='Image')
+        self.table.layout(row=0, sticky='w')
+        self.prev_image_button.grid(row=3, column=0, sticky='w')
+        self.next_image_button.grid(row=3, column=1, sticky='w')
+
+    def layout(self, row=0, column=0):
+        self.frame.grid(row=row, column=column, sticky='nesw')
+        self.selector.grid(row=0, column=0)
+        self.notebook.grid(row=0, column=1)
+
+
+class ImageCanvas11(Drawing):
+    def __init__(self, master=None, cnf={}, **kw):
+        super().__init__(master, cnf, **kw)
+        self.notebook = FileNotebook(
+            self.frame, width=200, height=100, padding=(5, 5, 5, 5))
+        self.create_image_loader()
+        self.create_annotation()
+
+    def create_image_loader(self):
+        # self.annotation_frame, self.annotation_buttons = self.notebook.add_frame(
+        #     [['Load', 'Save']], 'Annotation')
+        self.image_frame = ttk.Frame(self.notebook)
+        self.table = Table(self.image_frame)
+        self.table.add_row('image_dir', 'image_dir: ', width=14)
+        self.table.add_row('image_id', 'image_id: ', width=7)
+        self.table.add_row('bbox_id', 'bbox_id: ', width=7)
+        self.table.layout(row=3)
+
+    def create_annotation(self):
+        self.annotation_frame, self.annotation_buttons = self.notebook.add_frame(
+            [['Load', 'Save']], 'Annotation')
+        self.annotation_buttons[0][0]['command'] = self.load_graph
+        self.annotation_buttons[0][1]['command'] = lambda: self.save_graph(
+            'rectangle')
+
+    def drawing(self, graph_type, color, width=1, tags=None, **kw):
+        self.delete('temp')
+        if 'none' not in self.record_bbox:
+            x0, y0, x1, y1 = self.record_bbox
+            stride_x = x1 - x0
+            stride_y = y1 - y0
+            cond_x = stride_x > self.min_size[0]
+            cond_y = stride_y > self.min_size[1]
+            if (cond_x and cond_y) or graph_type in ['line', 'point']:
+                return self.mouse_draw_graph(graph_type, color, width, tags, activedash=10, **kw)
+
+    def layout(self, row=0, column=0):
+        self.frame.grid(row=row, column=column, sticky='nesw')
+        self.selector.grid(row=0, column=0)
+        self.notebook.grid(row=0, column=1, sticky='nesw')
+
+    def init_command(self):
+        self.image_buttons[0][0]['command'] = self.load_images
+        self.image_buttons[1][0]['command'] = self.prev_image
+        self.image_buttons[1][1]['command'] = self.next_image
+
+
+class Graph(Drawing):
     def __init__(self, master=None, cnf={}, **kw):
         super().__init__(master, cnf, **kw)
         self.min_size = (10, 10)
@@ -15,7 +93,8 @@ class Graph(ImageCanvas):
         self.image_names = ()
         self._image_loader = None
         self.create_notebook()
-        self.master.bind('<Control-s>', lambda event: self.save_graph('rectangle', event))
+        self.master.bind(
+            '<Control-s>', lambda event: self.save_graph('rectangle', event))
         self.master.bind('<Control-l>', self.load_graph)
 
     def drawing(self, graph_type, color, width=1, tags=None, **kw):
@@ -31,11 +110,15 @@ class Graph(ImageCanvas):
 
     def create_notebook(self):
         self.notebook = FileNotebook(
-            self.frame, width=200, height=90, padding=(5, 5, 5, 5))
+            self.frame, width=200, height=100, padding=(5, 5, 5, 5))
         self.image_frame, self.image_buttons = self.notebook.add_frame(
             [['Load', 'Save'], ['Prev', 'Next']], 'Image')
         self.annotation_frame, self.annotation_buttons = self.notebook.add_frame(
             [['Load', 'Save']], 'Annotation')
+        self.table = Table(self.image_frame)
+        self.table.add_row('image_id', 'image_id: ', width=7)
+        self.table.add_row('bbox_id', 'bbox_id: ', width=7)
+        self.table.layout(row=3)
         self.init_command()
 
     def layout(self, row=0, column=0):
@@ -162,6 +245,7 @@ class ScrollableDrawing(Graph):
         self.configure(xscrollcommand=self.scroll_x.set,
                        yscrollcommand=self.scroll_y.set)
         self.bind("<Configure>", self.resize)
+        self.bind('<3>', self.set_label)
         self.update_idletasks()
 
     def _set_scroll(self):
@@ -175,6 +259,12 @@ class ScrollableDrawing(Graph):
     def resize(self, event):
         region = self.bbox('all')
         self.configure(scrollregion=region)
+
+    def set_label(self, *args):
+        if 'graph' in self.gettags('current'):
+            graph_id = self.find_withtag('current')
+            #self.bunch[graph_id][]
+            print(graph_id)
 
     def layout(self):
         self.frame.pack(side='top', anchor='w')

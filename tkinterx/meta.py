@@ -46,9 +46,9 @@ class Row(TextMeta):
         self.label = ttk.Label(master, text=text)
         self.entry = ttk_type(master, textvariable=self.var, **kw)
 
-    def layout(self, row=0, sticky='we'):
-        self.label.grid(row=row, column=0, sticky=sticky)
-        self.entry.grid(row=row, column=1, sticky=sticky)
+    def layout(self, row=0, **kw):
+        self.label.grid(row=row, column=0, **kw)
+        self.entry.grid(row=row, column=1, **kw)
 
 
 class Table(dict):
@@ -81,9 +81,9 @@ class Table(dict):
             row.label.bind('<1>', lambda event: self.bind_filename(event, key))
         self[key] = row
 
-    def layout(self, row=0, sticky='we'):
+    def layout(self, row=0, **kw):
         for n_row, (key, widget) in enumerate(self.items()):
-            widget.layout(row+n_row, sticky=sticky)
+            widget.layout(row+n_row, **kw)
 
     def todict(self):
         return {key: str(value) for key, value in self.items()}

@@ -104,17 +104,3 @@ class Drawing(DrawingMeta):
         self.frame.grid(row=row, column=column, sticky='nesw')
         self.selector.grid(row=0, column=0)
 
-
-class ImageCanvas(Drawing):
-    image_path = ParamDict()
-    def __init__(self, master, image_path=None, cnf={}, **kw):
-        super().__init__(master, cnf, **kw)
-        self.image_path = image_path
-        if self.image_path:
-            self.image = ImageTk.PhotoImage(file=self.image_path)
-            self.create_background(0, 0)
-        
-    def create_background(self, x, y, **kw):
-        self.delete('background')
-        self.image = ImageTk.PhotoImage(file=self.image_path)
-        return self.create_image(x, y, image=self.image, tags='background', **kw)

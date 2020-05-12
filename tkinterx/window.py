@@ -29,7 +29,7 @@ class GraphWindow(Root):
         super().__init__(**kw)
         self.on_tune = False
         self.bind('<Control-t>', self.bind_graph)
-        self.canvas.bind('<3>', self.ask_cat)
+        #self.canvas.bind('<3>', self.ask_cat)
 
     def bind_graph(self, event):
         if self.on_tune:
