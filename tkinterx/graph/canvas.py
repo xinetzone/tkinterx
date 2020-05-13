@@ -151,7 +151,7 @@ class GraphDrawing(GraphMeta):
             return self.mouse_draw_graph(graph_type, color, width, tags, activedash=10, **kw)
 
     def finish_drawing(self, event, graph_type='rectangle', color='blue', width=1, tags=None, **kw):
-        self.drawing(graph_type, color, width=1, tags=None, **kw)
+        self.drawing(graph_type, color, width=width, tags=None, **kw)
         self.reset()
 
     def refresh_graph(self, event, graph_type='rectangle', color='blue', **kw):
