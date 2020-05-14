@@ -102,6 +102,7 @@ class GraphWindow(Root):
         self.annotation_buttons[0][0]['command'] = self.load_graph
         self.annotation_buttons[0][1]['command'] = self.save_graph
         self.bind('<Control-s>', self.save_graph)
+        self.bind('<Control-l>', self.load_graph)
         self.canvas.bind('<3>', self.selected_graph)
 
     def selected_graph(self, *args):
@@ -125,6 +126,7 @@ class GraphWindow(Root):
         bunch = {k: v for k, v in self.bunch.items() if v}
         params = {'root': self.loader.root.as_posix(), **bunch}
         mkdir('data')
+        print(bunch)
         path = 'data/annotations.json'
         if self.loader:
             save_bunch(params, path)
