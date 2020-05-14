@@ -64,7 +64,9 @@ class Root(Tk):
 
     def change_image(self, *args):
         if self.loader.names:
+            self.canvas.delete('all')
             self.create_background()
+            self.draw_current_cats()
             return True
         else:
             return False
@@ -98,12 +100,14 @@ class Root(Tk):
     def prev_image(self, *args, **kw):
         if self.current_image_id and self.loader.names:
             self.table['image_id'].var.set(int(self.current_image_id)-1)
+        self.canvas.delete('all')
         self.create_background()
         self.draw_current_cats()
 
     def next_image(self, *args, **kw):
         if self.current_image_id and self.loader.names:
             self.table['image_id'].var.set(int(self.current_image_id)+1)
+        self.canvas.delete('all')
         self.create_background()
         self.draw_current_cats()
 
