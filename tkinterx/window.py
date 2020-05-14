@@ -91,8 +91,6 @@ class Root(Tk):
             self.canvas.create_graph(activedash=10, **param)
 
     def draw_current_cats(self):
-        #self.update_bunch()
-        print(self.bunch)
         cats = self.bunch.get(self.loader.current_name)
         if cats:
             self.draw_graph(cats)

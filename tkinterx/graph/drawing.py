@@ -150,5 +150,5 @@ class ImageCanvas(Drawing):
             if (cond_x and cond_y) or self.shape in ['line', 'point']:
                 graph_id = self.drawing(self.shape, self.color, width=width, tags=None, **kw)
                 tags = self.gettags(graph_id)
-                self.bunch[graph_id] = {'tags': tags, 'bbox': self.bbox(graph_id)}
+                self.bunch[graph_id] = {'tags': tags, 'bbox': self.bbox(graph_id), 'name': 'car'}
         self.reset()
