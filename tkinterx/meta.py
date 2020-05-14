@@ -135,4 +135,5 @@ class PopupLabel(WindowMeta):
         if '' in [label]:
             showwarning(self)
         else:
-            askokcancel(self, message='Do you want to confirm the submission?')
+            pass
+            #askokcancel(self, message='Do you want to confirm the submission?')
