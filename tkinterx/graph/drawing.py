@@ -132,13 +132,13 @@ class ImageCanvas(Drawing):
         region = self.bbox('all')
         self.configure(scrollregion=region)
 
-    def finish_drawing(self, event, graph_type='rectangle', color='blue', width=1, tags=None, **kw):
+    def finish_drawing(self, event, width=1, tags=None, **kw):
         if 'none' not in self.record_bbox:
             x0, y0, x1, y1 = self.record_bbox
             stride_x = abs(x1 - x0)
             stride_y = abs(y1 - y0)
             cond_x = stride_x > self.min_size[0]
             cond_y = stride_y > self.min_size[1]
-            if (cond_x and cond_y) or graph_type in ['line', 'point']:
-                self.drawing(graph_type, color, width=width, tags=None, **kw)
+            if (cond_x and cond_y) or self.shape in ['line', 'point']:
+                self.drawing(self.shape, self.color, width=width, tags=None, **kw)
         self.reset()

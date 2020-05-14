@@ -1,18 +1,19 @@
-from tkinter import Tk, ttk, filedialog
+from tkinter import Tk, ttk, filedialog, StringVar
 from pathlib import Path
 from PIL import ImageTk
 
 from .tools.helper import StatusTool
 from .graph.drawing import ImageCanvas
 from .meta import ask_window, askokcancel, showwarning
-from .meta import PopupLabel, Table
-from .utils import FileNotebook
+from .meta import Table, PopupLabel
+from .utils import FileNotebook, mkdir, save_bunch, load_bunch
 from .image_utils import ImageLoader
 
 
 class Root(Tk):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self.bunch = {}
         self.statusbar = StatusTool(self, 'bbox: ')
         self.loader = ImageLoader('', 0)
         self.current_image_tk = None
@@ -57,7 +58,9 @@ class Root(Tk):
     def load_image(self, event=None):
         self.loader.root = Path(filedialog.askdirectory())
         self.table['image_id'].var.set(0)
-        self.create_background()
+        if self.loader.names:
+            self.bunch.update({name: {} for name in self.loader.names})
+            self.create_background()
 
     def change_image(self, *args):
         if self.loader.names:
@@ -84,14 +87,78 @@ class Root(Tk):
         self.canvas.grid(row=0, column=0, sticky='nesw')
         self.canvas.scroll_x.grid(row=1, column=0, sticky='we')
         self.canvas.scroll_y.grid(row=0, column=1, sticky='ns')
-        self.canvas.frame.grid(row=2, column=0, sticky='nw') 
+        self.canvas.frame.grid(row=2, column=0, sticky='nw')
         self.canvas.selector.grid(row=0, column=0, sticky='nw')
         self.notebook.grid(row=0, column=1, sticky='nw')
-        self.statusbar.grid(row=3, column=0, sticky='nw') 
+        self.statusbar.grid(row=3, column=0, sticky='w')
 
 
 class GraphWindow(Root):
     def __init__(self, **kw):
         super().__init__(**kw)
         self.canvas.bind_drawing()
-        
+        self.annotation_frame, self.annotation_buttons = self.notebook.add_frame(
+            [['Load', 'Save']], 'Annotation')
+        self.annotation_buttons[0][0]['command'] = self.load_graph
+        self.annotation_buttons[0][1]['command'] = self.save_graph
+        self.bind('<Control-s>', self.save_graph)
+        self.canvas.bind('<3>', self.selected_graph)
+
+    def selected_graph(self, *args):
+        graph_id = self.canvas.find_withtag('current')
+        tags = self.canvas.gettags(graph_id)
+        print(graph_id, tags)
+        if graph_id:
+            params = {'tags': tags, 'bbox': self.canvas.bbox(graph_id)}
+            if self.loader.names and 'background' not in tags:
+                name = self.grab_cat(params)
+                params['name'] = name
+                self.bunch[self.loader.current_name][graph_id[0]] = params
+            else:
+                self.table['bbox_id'].var.set('')
+
+    def grab_cat(self, params):
+        bunch = ask_window(self, PopupLabel)
+        return bunch.todict()['label']
+
+    def save_graph(self, *args):
+        bunch = {k: v for k, v in self.bunch.items() if v}
+        params = {'root': self.loader.root.as_posix(), **bunch}
+        mkdir('data')
+        path = 'data/annotations.json'
+        if self.loader:
+            save_bunch(params, path)
+
+    def bunch2params(self, bunch):
+        params = {}
+        for graph_id, cats in bunch.items():
+            tags = cats['tags']
+            _, color, shape, *_ = tags
+            graph_type = shape.split('_')[0]
+            bbox = cats['bbox']
+            params[graph_id] = {'tags': tags, 'color': color,
+                                'graph_type': graph_type, 'direction': bbox}
+        return params
+
+    def draw_graph(self, cats):
+        params = self.bunch2params(cats)
+        self.canvas.clear_graph()
+        for param in params.values():
+            self.canvas.create_graph(activedash=10, **param)
+
+    def draw_current_cats(self):
+        cats = self.bunch.get(self.loader.current_name)
+        if cats:
+            self.draw_graph(cats)
+
+    def load_graph(self, *args):
+        self.bunch = load_bunch('data/annotations.json')
+        root = self.bunch.get('root')
+        if root:
+            self.loader.root = Path(root)
+            self.table['image_id'].var.set(0)
+            if self.loader.names:
+                self.create_background()
+                self.draw_current_cats()
+        else:
+            self.draw_graph(self.bunch)
