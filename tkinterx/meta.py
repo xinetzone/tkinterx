@@ -14,18 +14,7 @@ def showwarning(window, title='Warning', message='Please check your input'):
         window.deiconify()
 
 
-def ask_window(tk_root, window_type):
-    '''Pass information through a window
-    :param tk_root: An instance of a Tk or an instance of its subclass
-    :param window_type: WindowMeta or its subclasses
-    '''
-    window = window_type(tk_root)
-    window.transient(tk_root)
-    tk_root.wait_window(window)
-    return window.table
-
-
-def get_name(key):
+def ask_filename(key):
     if 'path' in key:
         name = filedialog.askopenfilename()
     elif 'dir' in key:
@@ -57,9 +46,9 @@ class Row(TextMeta):
         self.label = ttk.Label(master, text=text)
         self.entry = ttk_type(master, textvariable=self.var, **kw)
 
-    def layout(self, row=0, sticky='we'):
-        self.label.grid(row=row, column=0, sticky=sticky)
-        self.entry.grid(row=row, column=1, sticky=sticky)
+    def layout(self, row=0, **kw):
+        self.label.grid(row=row, column=0, **kw)
+        self.entry.grid(row=row, column=1, **kw)
 
 
 class Table(dict):
@@ -68,6 +57,7 @@ class Table(dict):
     Example
     ======================
     from tkinter import Tk
+    from tkinterx.meta import Table
     root = Tk()
     table = Table(root)
     table.add_row('name', '姓名')
@@ -81,19 +71,19 @@ class Table(dict):
         super().__init__(*args, **kw)
         self.master = master
 
-    def bind_label(self, event, key):
-        name = get_name(key)
+    def bind_filename(self, event, key):
+        name = ask_filename(key)
         self[key].var.set(name)
 
     def add_row(self, key, text, **kw):
         row = Row(self.master, ttk.Entry, text, **kw)
         if 'path' in key or 'dir' in key:
-            row.label.bind('<1>', lambda event: self.bind_label(event, key))
+            row.label.bind('<1>', lambda event: self.bind_filename(event, key))
         self[key] = row
 
-    def layout(self, row=0, sticky='we'):
+    def layout(self, row=0, **kw):
         for n_row, (key, widget) in enumerate(self.items()):
-            widget.layout(row+n_row, sticky=sticky)
+            widget.layout(row+n_row, **kw)
 
     def todict(self):
         return {key: str(value) for key, value in self.items()}
@@ -119,6 +109,17 @@ class WindowMeta(Toplevel):
 
     def create_widget(self):
         NotImplemented
+
+
+def ask_window(tk_root, window_type):
+    '''Pass information through a window
+    :param tk_root: An instance of a Tk or an instance of its subclass
+    :param window_type: WindowMeta or its subclasses
+    '''
+    window = window_type(tk_root)
+    window.transient(tk_root)
+    tk_root.wait_window(window)
+    return window.table
 
 
 class PopupLabel(WindowMeta):

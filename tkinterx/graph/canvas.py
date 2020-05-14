@@ -1,7 +1,4 @@
-'''Some of the actions related to the graph.
-'''
-from tkinter import Canvas, ttk, StringVar
-from ..tools.helper import StatusTool
+from tkinter import Canvas, StringVar
 
 
 class CanvasMeta(Canvas):
@@ -14,11 +11,6 @@ class CanvasMeta(Canvas):
         :param master: a widget of tkinter or tkinter.ttk.
         '''
         super().__init__(master, cnf, **kw)
-
-    def layout(self, row=0, column=0):
-        '''Layout graphic elements with Grid'''
-        # Layout canvas space
-        self.grid(row=row, column=column, sticky='nwes')
 
     def create_graph(self, graph_type, direction, color='blue', width=1, tags=None, **kwargs):
         '''Draw basic graphic elements.
@@ -110,7 +102,11 @@ class GraphMeta(CanvasMeta):
         '''
         super().__init__(master, cnf, **kw)
         self.record_bbox = ['none']*4
-        self.xy_status = StatusTool(master, 'bbox: ')
+
+    def bind_normal(self):
+        self.bind('<1>', self.start_record)
+        self.bind('<Motion>', self.update_xy)
+        self.bind('<ButtonRelease-1>', self.finish_record)
 
     def get_canvasxy(self, event):
         '''返回事件的 canvas 坐标'''
@@ -119,50 +115,17 @@ class GraphMeta(CanvasMeta):
     def start_record(self, event):
         '''开始记录点击鼠标时的 canvas 坐标'''
         self.record_bbox[:2] = self.get_canvasxy(event)
-        self.xy_status.var.set(f"{self.record_bbox}")
-
-    def select_current_graph(self, event):
-        self.start_record(event)
-        current_graph_tag = self.find_withtag('current')
-        if current_graph_tag:
-            self.configure(cursor="target")
-            self.addtag_withtag('selected', 'current')
-        else:
-            self.configure(cursor="arrow")
 
     def update_xy(self, event):
+        '''记录鼠标移动的 canvas 坐标'''
         self.record_bbox[2:] = self.get_canvasxy(event)
-        self.xy_status.var.set(f"{self.record_bbox}")
-
-    @property
-    def strides(self):
-        record_bbox = self.record_bbox
-        if 'none' not in record_bbox:
-            x0, y0, x1, y1 = record_bbox
-            return x1 - x0, y1 - y0
-
-    def bind_selected(self):
-        self.unbind('<1>')
-        self.unbind('<Motion>')
-        self.unbind('<ButtonRelease-1>')
-        self.bind('<ButtonRelease-1>', self.select_current_graph)
-        self.bind('<Motion>', self.update_xy)
-        self.tag_bind('selected', '<ButtonRelease-1>', self.move_selected)
 
     def reset(self):
         self.record_bbox[:2] = ['none']*2
-        self.configure(cursor="arrow")
 
-    def cancel_selected(self, event):
-        self.dtag('selected')
+    def finish_record(self, event):
         self.reset()
-
-    def move_selected(self, event=None):
-        self.move('selected', *self.strides)
-        self.cancel_selected(event)
-
-    def layout(self, row=0, column=0):
-        self.xy_status.grid(row=row, column=column)
+        self.record_bbox_var.set(self.record_bbox)
 
 
 class GraphDrawing(GraphMeta):
@@ -172,9 +135,6 @@ class GraphDrawing(GraphMeta):
         super().__init__(master, cnf, **kw)
 
     def bind_drawing(self):
-        self.unbind('<1>')
-        self.unbind('<Motion>')
-        self.unbind('<ButtonRelease-1>')
         self.bind('<1>', self.start_record)
         self.bind('<Motion>', self.refresh_graph)
         self.bind('<ButtonRelease-1>', self.finish_drawing)
@@ -191,7 +151,7 @@ class GraphDrawing(GraphMeta):
             return self.mouse_draw_graph(graph_type, color, width, tags, activedash=10, **kw)
 
     def finish_drawing(self, event, graph_type='rectangle', color='blue', width=1, tags=None, **kw):
-        self.drawing(graph_type, color, width=1, tags=None, **kw)
+        self.drawing(graph_type, color, width=width, tags=None, **kw)
         self.reset()
 
     def refresh_graph(self, event, graph_type='rectangle', color='blue', **kw):
