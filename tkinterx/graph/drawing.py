@@ -38,9 +38,6 @@ class DrawingMeta(GraphDrawing):
         self.master.bind('<Control-Shift-Right>',
                          lambda event: self.scale_graph(event, [0, 0, 1, 0]))
 
-    def clear_graph(self, event=None):
-        self.delete('graph')
-
     @property
     def selected_current_graph(self):
         tags = self.gettags('current')
@@ -49,6 +46,9 @@ class DrawingMeta(GraphDrawing):
             bbox = self.bbox('background')
             graph_ids = set(self.find_enclosed(*bbox)) - graph_ids
         return tuple(graph_ids)
+
+    def clear_graph(self, event=None):
+        self.delete('graph')
 
     def delete_selected(self, event):
         self.delete(self.selected_current_graph)
@@ -111,7 +111,8 @@ class Drawing(DrawingMeta):
 
 class ImageCanvas(Drawing):
     def __init__(self, master=None, cnf={}, **kw):
-        super().__init__(master, cnf, **kw)
+        super().__init__(master, cnf, **kw)   
+        self.bunch = {}
         self.min_size = (25, 25)
         self._set_scroll()
         self._scroll_command()
@@ -132,6 +133,15 @@ class ImageCanvas(Drawing):
         region = self.bbox('all')
         self.configure(scrollregion=region)
 
+    def clear_graph(self, event=None):
+        self.delete('graph')
+        self.bunch = {}
+
+    def delete_selected(self, event):
+        print(self.selected_current_graph)
+        [self.bunch.pop(graph_id) for graph_id in self.selected_current_graph]
+        self.delete(self.selected_current_graph)
+
     def finish_drawing(self, event, width=1, tags=None, **kw):
         if 'none' not in self.record_bbox:
             x0, y0, x1, y1 = self.record_bbox
@@ -140,5 +150,7 @@ class ImageCanvas(Drawing):
             cond_x = stride_x > self.min_size[0]
             cond_y = stride_y > self.min_size[1]
             if (cond_x and cond_y) or self.shape in ['line', 'point']:
-                self.drawing(self.shape, self.color, width=width, tags=None, **kw)
+                graph_id = self.drawing(self.shape, self.color, width=width, tags=None, **kw)
+                tags = self.gettags(graph_id)
+                self.bunch[graph_id] = {'tags': tags, 'bbox': self.bbox(graph_id)}
         self.reset()

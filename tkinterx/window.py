@@ -53,7 +53,7 @@ class Root(Tk):
             self.table['image_id'].var.set(self.loader.current_id)
             self.current_image_tk = ImageTk.PhotoImage(
                 image=self.loader.current_image)  # 必须与 Tk 同级
-            return self.canvas.create_image(x, y, image=self.current_image_tk, tags='background', **kw)
+            return self.canvas.create_image(x, y, image=self.current_image_tk, tags='background', anchor='nw', **kw)
 
     def load_image(self, event=None):
         self.loader.root = Path(filedialog.askdirectory())
@@ -103,32 +103,38 @@ class GraphWindow(Root):
         self.annotation_buttons[0][1]['command'] = self.save_graph
         self.bind('<Control-s>', self.save_graph)
         self.bind('<Control-l>', self.load_graph)
-        self.canvas.bind('<3>', self.selected_graph)
+        #self.canvas.bind('<3>', self.selected_graph)
 
-    def selected_graph(self, *args):
-        graph_id = self.canvas.find_withtag('current')
-        tags = self.canvas.gettags(graph_id)
-        print(graph_id, tags)
-        if graph_id:
-            params = {'tags': tags, 'bbox': self.canvas.bbox(graph_id)}
-            if self.loader.names and 'background' not in tags:
-                name = self.grab_cat(params)
-                params['name'] = name
-                self.bunch[self.loader.current_name][graph_id[0]] = params
-            else:
-                self.table['bbox_id'].var.set('')
+    # def selected_graph(self, *args):
+    #     graph_id = self.canvas.find_withtag('current')
+    #     tags = self.canvas.gettags(graph_id)
+    #     print(graph_id, tags)
+    #     if graph_id:
+    #         params = {'tags': tags, 'bbox': self.canvas.bbox(graph_id)}
+    #         if self.loader.names and 'background' not in tags:
+    #             name = self.grab_cat(params)
+    #             params['name'] = name
+    #             self.bunch[self.loader.current_name][graph_id[0]] = params
+    #         else:
+    #             self.table['bbox_id'].var.set('')
 
-    def grab_cat(self, params):
-        bunch = ask_window(self, PopupLabel)
-        return bunch.todict()['label']
+    # def grab_cat(self, params):
+    #     bunch = ask_window(self, PopupLabel)
+    #     return bunch.todict()['label']
 
     def save_graph(self, *args):
-        bunch = {k: v for k, v in self.bunch.items() if v}
-        params = {'root': self.loader.root.as_posix(), **bunch}
-        mkdir('data')
-        print(bunch)
-        path = 'data/annotations.json'
-        if self.loader:
+        if self.loader.names:
+            image_bbox = self.canvas.bbox(self.canvas.find_withtag('background'))
+            graph_ids = self.canvas.find_enclosed(*image_bbox)
+            bunch = {}
+            for k in graph_ids:
+                v = self.canvas.bunch.get(k)
+                if v:
+                    bunch[k] = v
+            params = {'root': self.loader.root.as_posix(), self.loader.current_name: bunch}
+            mkdir('data')
+            #print(bunch)
+            path = 'data/annotations.json'
             save_bunch(params, path)
 
     def bunch2params(self, bunch):
