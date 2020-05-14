@@ -59,7 +59,7 @@ class Root(Tk):
         self.loader.root = Path(filedialog.askdirectory())
         self.table['image_id'].var.set(0)
         if self.loader.names:
-            self.bunch.update({name: {} for name in self.loader.names})
+            self.bunch['root'] = self.loader.root.as_posix()
             self.create_background()
 
     def change_image(self, *args):
@@ -73,15 +73,41 @@ class Root(Tk):
     def current_image_id(self):
         return self.table.todict()['image_id']
 
+    def bunch2params(self, bunch):
+        params = {}
+        for graph_id, cats in bunch.items():
+            tags = cats['tags']
+            _, color, shape, *_ = tags
+            graph_type = shape.split('_')[0]
+            bbox = cats['bbox']
+            params[graph_id] = {'tags': tags, 'color': color,
+                                'graph_type': graph_type, 'direction': bbox}
+        return params
+
+    def draw_graph(self, cats):
+        params = self.bunch2params(cats)
+        self.canvas.clear_graph()
+        for param in params.values():
+            self.canvas.create_graph(activedash=10, **param)
+
+    def draw_current_cats(self):
+        #self.update_bunch()
+        print(self.bunch)
+        cats = self.bunch.get(self.loader.current_name)
+        if cats:
+            self.draw_graph(cats)
+
     def prev_image(self, *args, **kw):
         if self.current_image_id and self.loader.names:
             self.table['image_id'].var.set(int(self.current_image_id)-1)
         self.create_background()
+        self.draw_current_cats()
 
     def next_image(self, *args, **kw):
         if self.current_image_id and self.loader.names:
             self.table['image_id'].var.set(int(self.current_image_id)+1)
         self.create_background()
+        self.draw_current_cats()
 
     def layout(self):
         self.canvas.grid(row=0, column=0, sticky='nesw')
@@ -105,6 +131,17 @@ class GraphWindow(Root):
         self.bind('<Control-l>', self.load_graph)
         #self.canvas.bind('<3>', self.selected_graph)
 
+    def update_bunch(self):
+        image_bbox = self.canvas.bbox(self.canvas.find_withtag('background'))
+        graph_ids = self.canvas.find_enclosed(*image_bbox)
+        param = {}
+        for k in graph_ids:
+            v = self.canvas.bunch.get(k)
+            if v:
+                param[k] = v
+        self.bunch.update({self.loader.current_name: param})
+
+
     # def selected_graph(self, *args):
     #     graph_id = self.canvas.find_withtag('current')
     #     tags = self.canvas.gettags(graph_id)
@@ -123,50 +160,24 @@ class GraphWindow(Root):
     #     return bunch.todict()['label']
 
     def save_graph(self, *args):
-        if self.loader.names:
-            image_bbox = self.canvas.bbox(self.canvas.find_withtag('background'))
-            graph_ids = self.canvas.find_enclosed(*image_bbox)
-            bunch = {}
-            for k in graph_ids:
-                v = self.canvas.bunch.get(k)
-                if v:
-                    bunch[k] = v
-            params = {'root': self.loader.root.as_posix(), self.loader.current_name: bunch}
-            mkdir('data')
-            #print(bunch)
-            path = 'data/annotations.json'
-            save_bunch(params, path)
+        mkdir('data')
+        self.update_bunch()
+        path = 'data/annotations.json'
+        save_bunch(self.bunch, path)
 
-    def bunch2params(self, bunch):
-        params = {}
-        for graph_id, cats in bunch.items():
-            tags = cats['tags']
-            _, color, shape, *_ = tags
-            graph_type = shape.split('_')[0]
-            bbox = cats['bbox']
-            params[graph_id] = {'tags': tags, 'color': color,
-                                'graph_type': graph_type, 'direction': bbox}
-        return params
-
-    def draw_graph(self, cats):
-        params = self.bunch2params(cats)
-        self.canvas.clear_graph()
-        for param in params.values():
-            self.canvas.create_graph(activedash=10, **param)
-
-    def draw_current_cats(self):
-        cats = self.bunch.get(self.loader.current_name)
-        if cats:
-            self.draw_graph(cats)
 
     def load_graph(self, *args):
-        self.bunch = load_bunch('data/annotations.json')
-        root = self.bunch.get('root')
-        if root:
-            self.loader.root = Path(root)
-            self.table['image_id'].var.set(0)
-            if self.loader.names:
-                self.create_background()
-                self.draw_current_cats()
-        else:
-            self.draw_graph(self.bunch)
+        try:
+            self.bunch = load_bunch('data/annotations.json')
+            root = self.bunch.get('root')
+            if root:
+                self.loader.root = Path(root)
+                self.table['image_id'].var.set(0)
+                if self.loader.names:
+                    self.create_background()
+                    self.draw_current_cats()
+            else:
+                self.draw_graph(self.bunch)
+        except:
+            pass
+        

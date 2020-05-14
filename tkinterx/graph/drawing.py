@@ -138,8 +138,6 @@ class ImageCanvas(Drawing):
         self.bunch = {}
 
     def delete_selected(self, event):
-        print(self.selected_current_graph)
-        [self.bunch.pop(graph_id) for graph_id in self.selected_current_graph]
         self.delete(self.selected_current_graph)
 
     def finish_drawing(self, event, width=1, tags=None, **kw):
