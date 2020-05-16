@@ -64,7 +64,7 @@ class Root(Tk):
 
     def change_image(self, *args):
         if self.loader.names:
-            self.canvas.delete('all')
+            #self.canvas.delete('all')
             self.create_background()
             self.draw_current_cats()
             return True
@@ -100,14 +100,14 @@ class Root(Tk):
     def prev_image(self, *args, **kw):
         if self.current_image_id and self.loader.names:
             self.table['image_id'].var.set(int(self.current_image_id)-1)
-        self.canvas.delete('all')
+        #self.canvas.delete('all')
         self.create_background()
         self.draw_current_cats()
 
     def next_image(self, *args, **kw):
         if self.current_image_id and self.loader.names:
             self.table['image_id'].var.set(int(self.current_image_id)+1)
-        self.canvas.delete('all')
+        #self.canvas.delete('all')
         self.create_background()
         self.draw_current_cats()
 
@@ -136,30 +136,19 @@ class GraphWindow(Root):
     def update_bunch(self):
         image_bbox = self.canvas.bbox(self.canvas.find_withtag('background'))
         graph_ids = self.canvas.find_enclosed(*image_bbox)
-        param = {}
-        for k in graph_ids:
-            v = self.canvas.bunch.get(k)
-            if v:
-                param[k] = v
-        self.bunch.update({self.loader.current_name: param})
+        if self.bunch.get(self.loader.current_name):
+            self.bunch[self.loader.current_name].update(self.canvas.bunch)
+        else:
+            self.bunch[self.loader.current_name] = self.canvas.bunch
 
-
-    # def selected_graph(self, *args):
-    #     graph_id = self.canvas.find_withtag('current')
-    #     tags = self.canvas.gettags(graph_id)
-    #     print(graph_id, tags)
-    #     if graph_id:
-    #         params = {'tags': tags, 'bbox': self.canvas.bbox(graph_id)}
-    #         if self.loader.names and 'background' not in tags:
-    #             name = self.grab_cat(params)
-    #             params['name'] = name
-    #             self.bunch[self.loader.current_name][graph_id[0]] = params
-    #         else:
-    #             self.table['bbox_id'].var.set('')
-
-    # def grab_cat(self, params):
-    #     bunch = ask_window(self, PopupLabel)
-    #     return bunch.todict()['label']
+    def change_image(self, *args):
+        if self.loader.names:
+            self.save_graph(*args)
+            self.create_background()
+            self.draw_current_cats()
+            return True
+        else:
+            return False
 
     def save_graph(self, *args):
         mkdir('data')
@@ -167,6 +156,21 @@ class GraphWindow(Root):
         path = 'data/annotations.json'
         save_bunch(self.bunch, path)
 
+    def prev_image(self, *args, **kw):
+        if self.current_image_id and self.loader.names:
+            self.table['image_id'].var.set(int(self.current_image_id)-1)
+        #self.canvas.delete('all')
+        self.create_background()
+        self.draw_current_cats()
+        self.save_graph(*args)
+
+    def next_image(self, *args, **kw):
+        if self.current_image_id and self.loader.names:
+            self.table['image_id'].var.set(int(self.current_image_id)+1)
+        #self.canvas.delete('all')
+        self.create_background()
+        self.draw_current_cats()
+        self.save_graph(*args)
 
     def load_graph(self, *args):
         try:

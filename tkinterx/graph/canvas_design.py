@@ -1,7 +1,7 @@
-from tkinter import ttk, colorchooser
+from tkinter import ttk, colorchooser, StringVar
 
-from tkinterx.param import ParamDict
-from tkinterx.graph.canvas import CanvasMeta
+from ..param import ParamDict
+from .canvas import CanvasMeta
 
 
 class SimpleGraph(CanvasMeta):
@@ -25,7 +25,6 @@ class SimpleGraph(CanvasMeta):
         self.fill = 'blue'
         self.add_column([40, 80, 100, 100], 5, 30, tags='TY')
         self.grid(row=0, column=0)
-        self.layout(row=1, column=0)
         root.mainloop()
         '''
         super().__init__(master, cnf, **kw)
@@ -73,7 +72,6 @@ class RegularGraph(SimpleGraph):
         self.fill = 'blue'
         self.add_column([40, 80], 20, 5)
         self.grid(row=0, column=0)
-        self.layout(row=1, column=0)
         root.mainloop()
         '''
         super().__init__(master, shape, color, width, fill, cnf, **kw)
@@ -109,6 +107,7 @@ class SelectorMeta(CanvasMeta):
         Example:
         ======================
         from tkinter import Tk
+        from tkinterx.graph.canvas_design import SelectorMeta
         root = Tk()
         select = SelectorMeta(root, background='pink')
         select.grid()
@@ -160,29 +159,61 @@ class SelectorMeta(CanvasMeta):
                 self.create_square_point([x, y], fill, width, tags=shape)
 
 
-class Selector(SelectorMeta):
-    def __init__(self, master, shape='rectangle', color='blue', cnf={}, **kw):
+class SelectorFrame(ttk.LabelFrame):
+    def __init__(self, master=None, **kw):
         '''Events that bind colors and shapes
         '''
-        super().__init__(master, shape, color, cnf, **kw)
+        super().__init__(master, **kw)
+        self.selector = SelectorMeta(
+            self, background='skyblue', width=350, height=100)
+        self.selector.custom_color_button['command'] = self.custom_color
+        self.info_var = StringVar(master, name='info')
+        self.info_label = ttk.Label(
+            self, textvariable=self.info_var, relief='sunken')
+        self.set_info()
         self.bind_selector()
+        self.layout()
+
+    @property
+    def shape(self):
+        return self.selector.shape
+
+    @property
+    def color(self):
+        return self.selector.color
+
+    def set_info(self):
+        text = f"{self.selector.color},{self.selector.shape}"
+        self.info_var.set(text)
 
     def bind_selector(self):
-        [self.color_bind(self, color)
+        [self.color_bind(self.selector, color)
          for color in SelectorMeta.colors]
-        [self.shape_bind(self, shape)
+        [self.shape_bind(self.selector, shape)
          for shape in SelectorMeta.shapes]
 
+    def custom_color(self, *args):
+        # Pop-up color selection dialog box
+        self.selector.custom_color(*args)
+        self.set_info()
+
     def update_color(self, new_color):
-        self.color = new_color
+        self.selector.color = new_color
+        self.set_info()
 
     def update_shape(self, new_shape):
         '''Update graph_type information.'''
-        self.shape = new_shape
+        self.selector.shape = new_shape
+        self.set_info()
 
     def color_bind(self, canvas, color):
         canvas.tag_bind(color, '<1>', lambda e: self.update_color(color))
 
     def shape_bind(self, canvas, shape):
-        canvas.tag_bind(shape, '<1>',
-                        lambda e: self.update_shape(shape))
+        canvas.tag_bind(shape, '<1>', lambda e: self.update_shape(shape))
+
+    def layout(self):
+        self.selector.grid(row=0, column=0, sticky='we')
+        self.info_label.grid(row=1, column=0, sticky='we')
+
+    
