@@ -168,8 +168,8 @@ class SelectorFrame(ttk.LabelFrame):
             self, background='skyblue', width=350, height=100)
         self.selector.custom_color_button['command'] = self.custom_color
         self.info_var = StringVar(master, name='info')
-        self.info_label = ttk.Label(
-            self, textvariable=self.info_var, relief='sunken')
+        self.info_label = ttk.Label(self, textvariable=self.info_var,
+                                    relief='sunken')
         self.set_info()
         self.bind_selector()
         self.layout()
@@ -215,5 +215,3 @@ class SelectorFrame(ttk.LabelFrame):
     def layout(self):
         self.selector.grid(row=0, column=0, sticky='we')
         self.info_label.grid(row=1, column=0, sticky='we')
-
-    

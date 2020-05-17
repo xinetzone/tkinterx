@@ -3,29 +3,57 @@ from pathlib import Path
 from PIL import ImageTk
 
 from .tools.helper import StatusTool
-from .graph.drawing import ImageCanvas
+from .graph.drawing import GraphCanvas
 from .meta import ask_window, askokcancel, showwarning
 from .meta import Table, PopupLabel
 from .utils import FileNotebook, mkdir, save_bunch, load_bunch
 from .image_utils import ImageLoader
 
 
-class Root(Tk):
+class GraphWindow(Tk):
     def __init__(self, **kw):
         super().__init__(**kw)
         self.bunch = {}
-        self.statusbar = StatusTool(self, 'bbox: ')
         self.loader = ImageLoader('', 0)
         self.current_image_tk = None
-        self.canvas = ImageCanvas(self, bg='pink', width=600, height=600)
-        self.notebook = FileNotebook(
-            self.canvas.frame, width=200, height=100, padding=(2, 2, 2, 2))
+        self.canvas = GraphCanvas(self, bg='pink', highlightthickness=0)
+        self.notebook = FileNotebook(self.canvas.selector, width=200,
+                                     height=90, padding=2)
         self.create_image_loader()
-        self.bind('<Motion>', self.upadte_record_bbox)
+        self.bind('<Control-l>', self.load_graph)
+        self.bind('<Control-s>', self.save_graph)
         self.layout()
 
-    def upadte_record_bbox(self, event):
-        self.statusbar.var.set(self.canvas.record_bbox)
+    @property
+    def current_image_id(self):
+        '''获取当前可能存在的背景图'''
+        return self.table.todict()['image_id']
+
+    def save_graph(self, event):
+        mkdir('data')
+        path = 'data/annotations.json'
+        if self.current_image_id:
+            self.bunch['root'] = self.loader.root.as_posix()
+            self.bunch[self.loader.current_name] = self.canvas.bunch
+        else:
+            self.bunch['default'] = self.canvas.bunch
+        save_bunch(self.bunch, path)
+        print(self.bunch)
+
+    def load_graph(self, *args):
+        try:
+            self.bunch = load_bunch('data/annotations.json')
+            root = self.bunch.get('root')
+            if root:
+                self.loader.root = Path(root)
+                self.table['image_id'].var.set(0)
+                self.create_background()
+                self.update_graph(event)
+                self.draw_current_cats()
+            else:
+                self.draw_graph(self.bunch)
+        except:
+            pass
 
     def create_image_loader(self):
         self.image_frame = ttk.Frame(self.notebook)
@@ -33,7 +61,6 @@ class Root(Tk):
             self.image_frame, text='Load', width=5, command=self.load_image)
         self.table = Table(self.image_frame)
         self.table.add_row('image_id', 'image_id:', width=7)
-        self.table.add_row('bbox_id', 'bbox_id:', width=7)
         self.prev_image_button = ttk.Button(
             self.image_frame, text='Prev', width=5, command=self.prev_image)
         self.next_image_button = ttk.Button(
@@ -53,7 +80,8 @@ class Root(Tk):
             self.table['image_id'].var.set(self.loader.current_id)
             self.current_image_tk = ImageTk.PhotoImage(
                 image=self.loader.current_image)  # 必须与 Tk 同级
-            return self.canvas.create_image(x, y, image=self.current_image_tk, tags='background', anchor='nw', **kw)
+            return self.canvas.create_image(x, y, image=self.current_image_tk,
+                                            tags='background', anchor='nw', **kw)
 
     def load_image(self, event=None):
         self.loader.root = Path(filedialog.askdirectory())
@@ -61,19 +89,15 @@ class Root(Tk):
         if self.loader.names:
             self.bunch['root'] = self.loader.root.as_posix()
             self.create_background()
+            self.bunch[self.loader.current_name] = {}
 
-    def change_image(self, *args):
+    def change_image(self, event=None):
         if self.loader.names:
-            #self.canvas.delete('all')
-            self.create_background()
-            self.draw_current_cats()
+            self.save_graph(event)
+            self.update_graph(event)
             return True
         else:
             return False
-
-    @property
-    def current_image_id(self):
-        return self.table.todict()['image_id']
 
     def bunch2params(self, bunch):
         params = {}
@@ -88,7 +112,6 @@ class Root(Tk):
 
     def draw_graph(self, cats):
         params = self.bunch2params(cats)
-        self.canvas.clear_graph()
         for param in params.values():
             self.canvas.create_graph(activedash=10, **param)
 
@@ -97,93 +120,26 @@ class Root(Tk):
         if cats:
             self.draw_graph(cats)
 
-    def prev_image(self, *args, **kw):
-        if self.current_image_id and self.loader.names:
-            self.table['image_id'].var.set(int(self.current_image_id)-1)
-        #self.canvas.delete('all')
+    def update_graph(self, current_name, canvas_bunch):
+        
+        if not canvas_bunch:
+            self.bunch[current_name] = self.canvas.bunch
         self.create_background()
         self.draw_current_cats()
 
-    def next_image(self, *args, **kw):
-        if self.current_image_id and self.loader.names:
-            self.table['image_id'].var.set(int(self.current_image_id)+1)
-        #self.canvas.delete('all')
-        self.create_background()
-        self.draw_current_cats()
+    def prev_image(self, event=None, **kw):
+        last_canvas_bunch = self.bunch[self.loader.current_name]
+        self.save_graph(event)
+        self.table['image_id'].var.set(int(self.current_image_id)-1)
+        canvas_bunch = self.bunch.get(self.loader.current_name)
+        self.update_graph(event)
+        
+
+    def next_image(self, event=None, **kw):
+        self.save_graph(event)
+        self.table['image_id'].var.set(int(self.current_image_id)+1)
+        self.update_graph(event)
 
     def layout(self):
-        self.canvas.grid(row=0, column=0, sticky='nesw')
-        self.canvas.scroll_x.grid(row=1, column=0, sticky='we')
-        self.canvas.scroll_y.grid(row=0, column=1, sticky='ns')
-        self.canvas.frame.grid(row=2, column=0, sticky='nw')
-        self.canvas.selector.grid(row=0, column=0, sticky='nw')
-        self.notebook.grid(row=0, column=1, sticky='nw')
-        self.statusbar.grid(row=3, column=0, sticky='w')
-
-
-class GraphWindow(Root):
-    def __init__(self, **kw):
-        super().__init__(**kw)
-        self.canvas.bind_drawing()
-        self.annotation_frame, self.annotation_buttons = self.notebook.add_frame(
-            [['Load', 'Save']], 'Annotation')
-        self.annotation_buttons[0][0]['command'] = self.load_graph
-        self.annotation_buttons[0][1]['command'] = self.save_graph
-        self.bind('<Control-s>', self.save_graph)
-        self.bind('<Control-l>', self.load_graph)
-        #self.canvas.bind('<3>', self.selected_graph)
-
-    def update_bunch(self):
-        image_bbox = self.canvas.bbox(self.canvas.find_withtag('background'))
-        graph_ids = self.canvas.find_enclosed(*image_bbox)
-        if self.bunch.get(self.loader.current_name):
-            self.bunch[self.loader.current_name].update(self.canvas.bunch)
-        else:
-            self.bunch[self.loader.current_name] = self.canvas.bunch
-
-    def change_image(self, *args):
-        if self.loader.names:
-            self.save_graph(*args)
-            self.create_background()
-            self.draw_current_cats()
-            return True
-        else:
-            return False
-
-    def save_graph(self, *args):
-        mkdir('data')
-        self.update_bunch()
-        path = 'data/annotations.json'
-        save_bunch(self.bunch, path)
-
-    def prev_image(self, *args, **kw):
-        if self.current_image_id and self.loader.names:
-            self.table['image_id'].var.set(int(self.current_image_id)-1)
-        #self.canvas.delete('all')
-        self.create_background()
-        self.draw_current_cats()
-        self.save_graph(*args)
-
-    def next_image(self, *args, **kw):
-        if self.current_image_id and self.loader.names:
-            self.table['image_id'].var.set(int(self.current_image_id)+1)
-        #self.canvas.delete('all')
-        self.create_background()
-        self.draw_current_cats()
-        self.save_graph(*args)
-
-    def load_graph(self, *args):
-        try:
-            self.bunch = load_bunch('data/annotations.json')
-            root = self.bunch.get('root')
-            if root:
-                self.loader.root = Path(root)
-                self.table['image_id'].var.set(0)
-                if self.loader.names:
-                    self.create_background()
-                    self.draw_current_cats()
-            else:
-                self.draw_graph(self.bunch)
-        except:
-            pass
-        
+        self.canvas.layout()
+        self.notebook.grid(row=0, column=1, sticky='nw', padx=5)
