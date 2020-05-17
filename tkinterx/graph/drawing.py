@@ -198,3 +198,56 @@ class GraphCanvas(_GraphCanvas):
         self.scroll_x.grid(row=1, column=0, sticky='we')
         self.statusbar.grid(row=2, column=0, sticky='w')
         self.selector.grid(row=3, column=0, sticky='nw')
+
+
+class ImageCanvas(GraphCanvas):
+    def __init__(self, master=None, cnf={}, **kw):
+        '''
+        '''
+        super().__init__(master, cnf, **kw)
+        self.notebook = FileNotebook(self.selector, width=200, 
+                                     height=90, padding=2)
+        self.create_image_loader()
+        
+    def create_image_loader(self):
+        self.image_frame = ttk.Frame(self.notebook)
+        self.load_image_button = ttk.Button(self.image_frame, text='Load', 
+                                            width=5, command=self.load_image)
+        self.table = Table(self.image_frame)
+        self.table.add_row('image_id', 'image_id:', width=7)
+        self.prev_image_button = ttk.Button(self.image_frame, text='Prev', 
+                                            width=5, command=self.prev_image)
+        self.next_image_button = ttk.Button(self.image_frame, text='Next', 
+                                            width=5, command=self.next_image)
+        self.notebook.add(self.image_frame, text='Image')
+        self.table['image_id'].entry['validate'] = "key"
+        self.table['image_id'].entry['validatecommand'] = self.change_image_id
+        self.table.layout(row=0, sticky='w')
+        self.load_image_button.grid(row=3, column=0, sticky='w')
+        self.prev_image_button.grid(row=3, column=1, sticky='w')
+        self.next_image_button.grid(row=3, column=2, sticky='w')
+        
+    def change_image_id(self, *event):
+        image_id = self.table['image_id'].get()
+        if image_id:
+            
+        if self.loader.names:
+            self.save_graph(event)
+            self.update_graph(event)
+            return True
+        else:
+            return False
+        
+    def change_image(self):
+        if self.loader.names:
+            self.save_graph(event)
+            self.update_graph(event)
+            return True
+        else:
+            return False
+        
+    def prev_image(self, *event):
+        NotImplemented
+        
+    def next_image(self, *event):
+        NotImplemented
