@@ -1,12 +1,17 @@
 from tkinter import ttk, Tk
+from functools import lru_cache
+from PIL import Image, ImageTk
 
 from .canvas import CanvasMeta
 from .canvas_design import SelectorFrame
 from ..tools.helper import StatusTool
+from ..param import ParamDict
 
 
 class GraphMeta(CanvasMeta):
-    def __init__(self, master=None, cnf={}, **kw):
+    photo_name = ParamDict()
+
+    def __init__(self, master=None, photo_name=None, is_fullscreen=False, cnf={}, **kw):
         '''
         '''
         super().__init__(master, cnf, **kw)
@@ -17,9 +22,34 @@ class GraphMeta(CanvasMeta):
             (x1, y1) 为鼠标在画布移动时的 canavas 坐标
         '''
         super().__init__(master, **kw)
+        self.photo_name = photo_name  # 显式的引用 PhotoImage，作为画布的背景图
+        self.is_fullscreen = is_fullscreen
         self.record_bbox = ['none']*4
         self.statusbar = StatusTool(master, 'bbox: ')
+        self.bind("<Configure>", self.resize)
         self.bind_normal()
+
+    @property
+    def image(self):
+        if self.photo_name:
+            return Image.open(self.photo_name)
+
+    def set_photo(self, image=None, size=None, **kw):
+        '''设置背景图'''
+        # 使用实例变量引用避免 PhotoImage 被销毁
+        self.photo = ImageTk.PhotoImage(image, size, **kw)
+
+    def resize(self, event):
+        if self.image:
+            if self.is_fullscreen:
+                size = event.width, event.height
+                image = self.image.resize(size)
+                self.set_photo(image=image)
+            else:
+                self.set_photo(image=self.image)
+            self.create_image(0, 0, image=self.photo,
+                              anchor='nw', tags='background')
+            self.lower('background')
 
     def bind_normal(self):
         self.bind('<1>', self.start_record)
@@ -52,10 +82,10 @@ class GraphMeta(CanvasMeta):
 
 
 class _GraphCanvas(GraphMeta):
-    def __init__(self, master=None, cnf={}, **kw):
+    def __init__(self, master=None, photo_name=None, cnf={}, **kw):
         '''
         '''
-        super().__init__(master, cnf, **kw)
+        super().__init__(master, photo_name, cnf, **kw)
         self.bind_drawing(master)
         self.bunch = {}  # 记录 canvas 对象
 
@@ -153,10 +183,10 @@ class _GraphCanvas(GraphMeta):
 
 
 class GraphCanvas(_GraphCanvas):
-    def __init__(self, master=None, cnf={}, **kw):
+    def __init__(self, master=None, photo_name=None, cnf={}, **kw):
         '''
         '''
-        super().__init__(master, cnf, **kw)
+        super().__init__(master, photo_name, cnf, **kw)
         self.min_size = (25, 25)
         self.selector = SelectorFrame(
             master, width=350, height=90, text='Selector', relief='raise')
@@ -169,8 +199,15 @@ class GraphCanvas(_GraphCanvas):
                        yscrollcommand=self.scroll_y.set)
         self.update_idletasks()
         self.bind("<Configure>", self.resize)
+        self.photo = None  # 显式的引用 PhotoImage
+
+    def set_photo(self, image=None, size=None, **kw):
+        '''设置背景图'''
+        # 使用实例变量引用避免 PhotoImage 被销毁
+        self.photo = ImageTk.PhotoImage(image, size, **kw)
 
     def resize(self, event):
+        _GraphCanvas.resize(self, event)
         region = self.bbox('all')
         self.configure(scrollregion=region)
 
@@ -185,7 +222,6 @@ class GraphCanvas(_GraphCanvas):
                 graph_id = self.drawing(self.selector.shape, self.selector.color,
                                         width=width, tags=tags, **kw)
                 self.bunch.update({graph_id: self.update_tags(graph_id)})
-                print(self.bunch)
         self.finish_record()
 
     def refresh_graph(self, event, **kw):
@@ -198,56 +234,3 @@ class GraphCanvas(_GraphCanvas):
         self.scroll_x.grid(row=1, column=0, sticky='we')
         self.statusbar.grid(row=2, column=0, sticky='w')
         self.selector.grid(row=3, column=0, sticky='nw')
-
-
-class ImageCanvas(GraphCanvas):
-    def __init__(self, master=None, cnf={}, **kw):
-        '''
-        '''
-        super().__init__(master, cnf, **kw)
-        self.notebook = FileNotebook(self.selector, width=200, 
-                                     height=90, padding=2)
-        self.create_image_loader()
-        
-    def create_image_loader(self):
-        self.image_frame = ttk.Frame(self.notebook)
-        self.load_image_button = ttk.Button(self.image_frame, text='Load', 
-                                            width=5, command=self.load_image)
-        self.table = Table(self.image_frame)
-        self.table.add_row('image_id', 'image_id:', width=7)
-        self.prev_image_button = ttk.Button(self.image_frame, text='Prev', 
-                                            width=5, command=self.prev_image)
-        self.next_image_button = ttk.Button(self.image_frame, text='Next', 
-                                            width=5, command=self.next_image)
-        self.notebook.add(self.image_frame, text='Image')
-        self.table['image_id'].entry['validate'] = "key"
-        self.table['image_id'].entry['validatecommand'] = self.change_image_id
-        self.table.layout(row=0, sticky='w')
-        self.load_image_button.grid(row=3, column=0, sticky='w')
-        self.prev_image_button.grid(row=3, column=1, sticky='w')
-        self.next_image_button.grid(row=3, column=2, sticky='w')
-        
-    def change_image_id(self, *event):
-        image_id = self.table['image_id'].get()
-        if image_id:
-            
-        if self.loader.names:
-            self.save_graph(event)
-            self.update_graph(event)
-            return True
-        else:
-            return False
-        
-    def change_image(self):
-        if self.loader.names:
-            self.save_graph(event)
-            self.update_graph(event)
-            return True
-        else:
-            return False
-        
-    def prev_image(self, *event):
-        NotImplemented
-        
-    def next_image(self, *event):
-        NotImplemented
