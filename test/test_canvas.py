@@ -22,7 +22,7 @@ def test_Meta():
                       fill='lightblue', style='chord', **kw)
     self.create_graph('polygon', [(70, 80), (20, 70),
                                   (30, 90)], fill='purple', **kw)
-    self.layout(row=0, column=0)
+    self.grid(row=0, column=0)
     print(self.gettags(1))
     print(self.find_withtag('test'))
     root.mainloop()

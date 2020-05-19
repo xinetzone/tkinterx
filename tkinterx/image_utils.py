@@ -52,14 +52,17 @@ class ImageLoader:
     def current_name(self):
         return self.names[self.current_id]
 
+    @property
+    def current_path(self):
+        return self.root / self.current_name
+
     def __len__(self):
         return len(self.names)
 
-    def name2image(self, name):
-        path = self.root / name
+    def path2image(self, path):
         return Image.open(path)
 
     @property
     def current_image(self):
-        return self.name2image(self.current_name)
+        return self.path2image(self.current_path)
 
