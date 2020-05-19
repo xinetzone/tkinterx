@@ -107,6 +107,10 @@ class GraphWindow(Tk):
                 self.canvas.update_background()
                 self.table['image_id'].var.set(0)
                 self.draw_current_graph()
+        else:
+            cats = self.bunch.get('default')
+            if cats:
+                self._draw_graph(cats)
 
     def load_bunch(self):
         path = Path(self.default_path)
@@ -125,8 +129,10 @@ class GraphWindow(Tk):
                 current_name = self.canvas.loader.current_name
                 root = self.canvas.loader.root.as_posix()
                 cats = {current_name: list(values)}
-                self.bunch.update({"root":root, **cats})
-                save_bunch(self.bunch, self.default_path)
+                self.bunch.update({"root": root, **cats})
+            else:
+                self.bunch.update({'default': list(values)})
+            save_bunch(self.bunch, self.default_path)
 
     def _draw_graph(self, cats):
         params = self.cat2params(cats)
@@ -147,7 +153,7 @@ class GraphWindow(Tk):
     def copy_current_graph(self, event):
         print('1', self.copy_current_graph)
         self.copy_current_graph = list(self.canvas.bunch.copy().values())
-        
+
     def paste_graph(self, event):
         self.draw_graph(self.copy_current_graph)
 
@@ -165,14 +171,15 @@ class GraphWindow(Tk):
         current_cats = self.bunch.get(self.canvas.loader.current_name)
         self.canvas.next_image(event, **kw)
         next_cats = self.bunch.get(self.canvas.loader.current_name)
-        if not next_cats:
-            if current_cats:
-                self._draw_graph(current_cats)
-        else:
-            self.draw_current_graph()
+        # if not next_cats:
+        #     if current_cats:
+        #         self._draw_graph(current_cats)
+        # else:
+        #     self.draw_current_graph()
+        self.draw_current_graph()
         self.table['image_id'].var.set(self.canvas.loader.current_id)
         self.bunch.clear()
-        
+
     def layout(self):
         self.canvas.layout()
         self.notebook.grid(row=0, column=1, sticky='nw', padx=5)
