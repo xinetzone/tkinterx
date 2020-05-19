@@ -39,17 +39,19 @@ class GraphMeta(CanvasMeta):
         # 使用实例变量引用避免 PhotoImage 被销毁
         self.photo = ImageTk.PhotoImage(image, size, **kw)
 
+    def update_photo(self, image):
+        self.delete('background')
+        self.set_photo(image=image)
+        self.create_image(0, 0, image=self.photo,
+                              anchor='nw', tags='background')
+        self.lower('background')
+
     def resize(self, event):
         if self.image:
             if self.is_fullscreen:
                 size = event.width, event.height
-                image = self.image.resize(size)
-                self.set_photo(image=image)
-            else:
-                self.set_photo(image=self.image)
-            self.create_image(0, 0, image=self.photo,
-                              anchor='nw', tags='background')
-            self.lower('background')
+                self.image = self.image.resize(size)
+            self.update_photo(self.image)
 
     def bind_normal(self):
         self.bind('<1>', self.start_record)
