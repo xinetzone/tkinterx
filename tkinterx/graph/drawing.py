@@ -1,99 +1,37 @@
-from tkinter import ttk, Tk
-from functools import lru_cache
-from PIL import Image, ImageTk
+from tkinter import ttk
 
-from .canvas import CanvasMeta
-from .canvas_design import SelectorFrame
-from ..tools.helper import StatusTool
+from .canvas import GraphMeta
+from .shape import Rectangle
 from ..param import ParamDict
 
 
-class GraphMeta(CanvasMeta):
-    photo_name = ParamDict()
+class _GraphCanvas(GraphMeta):
+    graph_type = ParamDict()
+    color = ParamDict()
 
-    def __init__(self, master=None, photo_name=None, is_fullscreen=False, cnf={}, **kw):
+    def __init__(self, master=None,  graph_type='rectangle', color='blue',  min_size=10, cnf={}, **kw):
         '''
         '''
         super().__init__(master, cnf, **kw)
-        '''
-        属性
-        =====
-        record_bbox: [x0, y0, x1, y1]，其中 (x0, y0) 为鼠标单击左键时的 canvas 坐标，当释放鼠标时恢复为 ['none']*2
-            (x1, y1) 为鼠标在画布移动时的 canavas 坐标
-        '''
-        super().__init__(master, **kw)
-        self.photo_name = photo_name  # 显式的引用 PhotoImage，作为画布的背景图
-        self.is_fullscreen = is_fullscreen
-        self.record_bbox = ['none']*4
-        self.statusbar = StatusTool(master, 'bbox: ')
-        self.bind("<Configure>", self.resize)
-        self.bind_normal()
+        self.min_rect = Rectangle([0, 0, min_size, min_size])
+        self.graph_type, self.color = graph_type, color
+        self.bind_tune(master)
+        self.bunch = {}  # 记录 canvas 对象
+        master.bind('<p>', self.print_bunch)
 
     @property
-    def image(self):
-        if self.photo_name:
-            return Image.open(self.photo_name)
+    def record_bbox(self):
+        _record_bbox = self._record_bbox
+        if 'none' in _record_bbox:
+            return
+        else:
+            return Rectangle(_record_bbox)
 
-    def set_photo(self, image=None, size=None, **kw):
-        '''设置背景图'''
-        # 使用实例变量引用避免 PhotoImage 被销毁
-        self.photo = ImageTk.PhotoImage(image, size, **kw)
+    def print_bunch(self, *event):
+        self.update_bunch(event)
+        print(self.bunch)
 
-    def update_photo(self, image):
-        self.delete('background')
-        self.set_photo(image=image)
-        self.create_image(0, 0, image=self.photo,
-                              anchor='nw', tags='background')
-        self.lower('background')
-
-    def resize(self, event):
-        if self.image:
-            if self.is_fullscreen:
-                size = event.width, event.height
-                self.image = self.image.resize(size)
-            self.update_photo(self.image)
-
-    def bind_normal(self):
-        self.bind('<1>', self.start_record)
-        self.bind('<Motion>', self.update_xy)
-
-    def get_canvasxy(self, event):
-        '''返回事件的 canvas 坐标'''
-        return self.canvasx(event.x), self.canvasy(event.y)
-
-    def start_record(self, event):
-        '''开始记录点击鼠标时的 canvas 坐标'''
-        self.record_bbox[:2] = self.get_canvasxy(event)
-        self.statusbar.var.set(self.record_bbox)
-
-    def update_xy(self, event):
-        '''记录鼠标移动的 canvas 坐标'''
-        self.record_bbox[2:] = self.get_canvasxy(event)
-        self.statusbar.var.set(self.record_bbox)
-
-    def reset(self):
-        self.record_bbox[:2] = ['none']*2
-
-    def finish_record(self):
-        self.reset()
-        self.statusbar.var.set(self.record_bbox)
-
-    def layout(self):
-        self.grid(row=0, column=0, sticky='nesw')
-        self.statusbar.grid(row=1, column=0, sticky='w')
-
-
-class _GraphCanvas(GraphMeta):
-    def __init__(self, master=None, photo_name=None, cnf={}, **kw):
-        '''
-        '''
-        super().__init__(master, photo_name, cnf, **kw)
-        self.bind_drawing(master)
-        self.bunch = {}  # 记录 canvas 对象
-
-    def bind_drawing(self, master):
-        master.bind('<Motion>', self.refresh_graph)
-        master.bind('<ButtonRelease-1>', self.finish_drawing)
+    def bind_tune(self, master):
         master.bind('<F1>', self.clear_graph)
         master.bind('<Delete>', self.delete_graph)
         master.bind('<Up>', lambda event: self.move_graph(event, 0, -1))
@@ -101,62 +39,72 @@ class _GraphCanvas(GraphMeta):
         master.bind('<Left>', lambda event: self.move_graph(event, -1, 0))
         master.bind('<Right>', lambda event: self.move_graph(event, 1, 0))
         master.bind('<Control-Up>',
-                    lambda event: self.scale_graph(event, [0, -1, 0, 0]))
+                    lambda event: self.tune_graph(event, [0, -1, 0, 0]))
         master.bind('<Control-Down>',
-                    lambda event: self.scale_graph(event, [0, 1, 0, 0]))
+                    lambda event: self.tune_graph(event, [0, 1, 0, 0]))
         master.bind('<Control-Left>',
-                    lambda event: self.scale_graph(event, [-1, 0, 0, 0]))
+                    lambda event: self.tune_graph(event, [-1, 0, 0, 0]))
         master.bind('<Control-Right>',
-                    lambda event: self.scale_graph(event, [1, 0, 0, 0]))
+                    lambda event: self.tune_graph(event, [1, 0, 0, 0]))
         master.bind('<Control-Shift-Up>',
-                    lambda event: self.scale_graph(event, [0, 0, 0, -1]))
+                    lambda event: self.tune_graph(event, [0, 0, 0, -1]))
         master.bind('<Control-Shift-Down>',
-                    lambda event: self.scale_graph(event, [0, 0, 0, 1]))
+                    lambda event: self.tune_graph(event, [0, 0, 0, 1]))
         master.bind('<Control-Shift-Left>',
-                    lambda event: self.scale_graph(event, [0, 0, -1, 0]))
+                    lambda event: self.tune_graph(event, [0, 0, -1, 0]))
         master.bind('<Control-Shift-Right>',
-                    lambda event: self.scale_graph(event, [0, 0, 1, 0]))
+                    lambda event: self.tune_graph(event, [0, 0, 1, 0]))
 
-    def mouse_draw_graph(self, graph_type, color='blue', width=1, tags=None, **kw):
-        if graph_type == 'point':
-            return self.create_square_point(self.record_bbox[2:], color, width, tags, **kw)
+    def mouse_draw_graph(self, width=1, tags=None, **kw):
+        if self.graph_type == 'point':
+            return self.create_square_point(self._record_bbox[2:], self.color, width, tags, **kw)
         else:
-            return self.create_graph(graph_type, self.record_bbox, color, width, tags, **kw)
+            return self.create_graph(self.graph_type, self._record_bbox, self.color, width, tags, **kw)
 
-    def drawing(self, graph_type, color, width=1, tags=None, **kw):
-        self.delete('temp')
-        if 'none' not in self.record_bbox:
-            return self.mouse_draw_graph(graph_type, color, width, tags, activedash=10, **kw)
+    def drawing(self, width=1, tags=None, **kw):
+        if self.record_bbox:
+            self.delete('temp')
+            return self.mouse_draw_graph(width, tags, activedash=10, **kw)
 
-    def update_tags(self, graph_id):
-        return {'tags': self.gettags(graph_id), 'bbox': self.bbox(graph_id)}
+    def refresh_graph(self, event, **kw):
+        if self.graph_type:
+            self.after(30, lambda: self.drawing(
+                width=2, tags='temp', dash=10, **kw))
 
-    def update_bunch(self, event):
+    def finish_drawing(self, *event,  **kw):
+        if self.graph_type:
+            if self.record_bbox:
+                if self.graph_type in ['line', 'point'] or not self.record_bbox < self.min_rect:
+                    self.drawing(width=1, tags=None, **kw)
+        self.reset(event)
+
+    def reset(self, *event):
+        self._record_bbox[:2] = ['none']*2
+
+    def bind_drawing(self, master):
+        master.bind('<Motion>', self.refresh_graph)
+        master.bind('<ButtonRelease-1>', self.finish_drawing)
+
+    def unbind_drawing(self, master):
+        master.unbind('<Motion>')
+        master.unbind('<ButtonRelease-1>')
+
+    def get_graph(self, graph_id):
+        return {'bbox': self.bbox(graph_id), 'tags': self.gettags(graph_id)}
+
+    def update_bunch(self, *event):
         graph_ids = self.find_withtag('graph')
-        params = {graph_id: self.update_tags(graph_id)
-                  for graph_id in graph_ids}
+        params = {k: self.get_graph(graph_id)
+                  for k, graph_id in enumerate(graph_ids)}
         self.bunch = params
-
-    def finish_drawing(self, event, graph_type='rectangle', color='blue', width=1, tags=None, **kw):
-        graph_id = self.drawing(
-            graph_type, color, width=width, tags=tags, **kw)
-        self.bunch.update(self.update_tags(graph_id))
-        self.finish_record()
-
-    def refresh_graph(self, event, graph_type='rectangle', color='blue', **kw):
-        self.after(30, lambda: self.drawing(graph_type, color, width=2,
-                                            tags='temp', dash=10, **kw))
 
     def clear_graph(self, event):
         self.delete('graph')
         self.bunch = {}
 
     def delete_graph(self, event):
-        graph_id = self.find_withtag('current')
-        tags = self.gettags(graph_id)
-        if 'graph' in tags:
-            self.delete(graph_id)
-            self.update_bunch(event)
+        self.delete(self.selected_current_graph)
+        self.update_bunch(event)
 
     @property
     def selected_current_graph(self):
@@ -167,7 +115,7 @@ class _GraphCanvas(GraphMeta):
             graph_ids = set(self.find_enclosed(*bbox)) - graph_ids
         return tuple(graph_ids)
 
-    def scale_graph(self, event, strides):
+    def tune_graph(self, event, strides):
         bbox = self.bbox('current')
         width = 1  # 图形的宽度
         if bbox:
@@ -185,54 +133,24 @@ class _GraphCanvas(GraphMeta):
 
 
 class GraphCanvas(_GraphCanvas):
-    def __init__(self, master=None, photo_name=None, cnf={}, **kw):
+    def __init__(self, master=None,  graph_type='rectangle', color='blue', min_size=10, cnf={}, **kw):
         '''
         '''
-        super().__init__(master, photo_name, cnf, **kw)
-        self.min_size = (25, 25)
-        self.selector = SelectorFrame(
-            master, width=350, height=90, text='Selector', relief='raise')
+        super().__init__(master,  graph_type, color, min_size, cnf, **kw)
         self.scroll_x = ttk.Scrollbar(master, orient='horizontal')
         self.scroll_y = ttk.Scrollbar(master, orient='vertical')
-        super().__init__(master, **kw)
         self.scroll_x['command'] = self.xview
         self.scroll_y['command'] = self.yview
         self.configure(xscrollcommand=self.scroll_x.set,
                        yscrollcommand=self.scroll_y.set)
         self.update_idletasks()
         self.bind("<Configure>", self.resize)
-        self.photo = None  # 显式的引用 PhotoImage
-
-    def set_photo(self, image=None, size=None, **kw):
-        '''设置背景图'''
-        # 使用实例变量引用避免 PhotoImage 被销毁
-        self.photo = ImageTk.PhotoImage(image, size, **kw)
 
     def resize(self, event):
-        _GraphCanvas.resize(self, event)
         region = self.bbox('all')
         self.configure(scrollregion=region)
-
-    def finish_drawing(self, event, width=1, tags=None, **kw):
-        if 'none' not in self.record_bbox:
-            x0, y0, x1, y1 = self.record_bbox
-            stride_x = abs(x1 - x0)
-            stride_y = abs(y1 - y0)
-            cond_x = stride_x > self.min_size[0]
-            cond_y = stride_y > self.min_size[1]
-            if (cond_x and cond_y) or self.selector.shape in ['line', 'point']:
-                graph_id = self.drawing(self.selector.shape, self.selector.color,
-                                        width=width, tags=tags, **kw)
-                self.bunch.update({graph_id: self.update_tags(graph_id)})
-        self.finish_record()
-
-    def refresh_graph(self, event, **kw):
-        self.after(30, lambda: self.drawing(self.selector.shape, self.selector.color,
-                                            width=2, tags='temp', dash=10, **kw))
 
     def layout(self):
         self.grid(row=0, column=0, sticky='nesw')
         self.scroll_y.grid(row=0, column=1, sticky='ns')
         self.scroll_x.grid(row=1, column=0, sticky='we')
-        self.statusbar.grid(row=2, column=0, sticky='w')
-        self.selector.grid(row=3, column=0, sticky='nw')

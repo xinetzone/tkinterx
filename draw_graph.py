@@ -7,7 +7,7 @@ def test_window():
     root.geometry('1080x800')
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
-    root.layout()
+    #root.layout()
     root.mainloop()
 
 

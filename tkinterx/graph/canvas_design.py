@@ -172,7 +172,6 @@ class SelectorFrame(ttk.LabelFrame):
                                     relief='sunken')
         self.set_info()
         self.bind_selector()
-        self.layout()
 
     @property
     def shape(self):

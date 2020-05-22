@@ -90,3 +90,32 @@ class CanvasMeta(Canvas):
         :param location: (x, y) The location of the square_point
         '''
         return self.create_square(position, 0, color, width, tags, **kw)
+
+
+class GraphMeta(CanvasMeta):
+    def __init__(self, master=None, cnf={}, **kw):
+        '''
+        '''
+        super().__init__(master, cnf, **kw)
+        '''
+        属性
+        =====
+        record_bbox: [x0, y0, x1, y1]，其中 (x0, y0) 为鼠标单击左键时的 canvas 坐标，当释放鼠标时恢复为 ['none']*2
+            (x1, y1) 为鼠标在画布移动时的 canavas 坐标
+        '''
+        super().__init__(master, **kw)
+        self._record_bbox = ['none']*4
+        self.bind('<Motion>', self.update_xy)
+        self.bind('<1>', self.start_record)
+
+    def start_record(self, event):
+        '''开始记录点击鼠标时的 canvas 坐标'''
+        self._record_bbox[:2] = self.get_canvasxy(event)
+
+    def get_canvasxy(self, event):
+        '''返回事件的 canvas 坐标'''
+        return self.canvasx(event.x), self.canvasy(event.y)
+
+    def update_xy(self, event):
+        '''记录鼠标移动的 canvas 坐标'''
+        self._record_bbox[2:] = self.get_canvasxy(event)
