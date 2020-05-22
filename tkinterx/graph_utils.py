@@ -82,10 +82,10 @@ class GraphFrame(SelectorFrame):
 
     def update_shape(self, new_shape):
         '''Update graph_type information.'''
-        self.canvas.bind_drawing(self.master)
         self.selector.shape = new_shape
         self.set_info()
         self.canvas.graph_type = new_shape
+        self.canvas.bind_drawing(self.master)
 
     def layout(self):
         self.canvas.layout()

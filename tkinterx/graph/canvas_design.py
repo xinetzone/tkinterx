@@ -124,6 +124,7 @@ class SelectorMeta(CanvasMeta):
                                               command=self.custom_color)
         self.create_colors(self.x, self.y)
         self.create_shapes(self.x, self.y+self.radius*3)
+        self.dtag('graph')
 
     def custom_color(self, *args):
         # Pop-up color selection dialog box
