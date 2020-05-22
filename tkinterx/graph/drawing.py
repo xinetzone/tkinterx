@@ -1,4 +1,4 @@
-from tkinter import ttk
+from tkinter import ttk, Toplevel
 
 from .canvas import GraphMeta
 from .shape import Rectangle
@@ -9,15 +9,28 @@ class _GraphCanvas(GraphMeta):
     graph_type = ParamDict()
     color = ParamDict()
 
-    def __init__(self, master=None,  graph_type='rectangle', color='blue',  min_size=10, cnf={}, **kw):
+    def __init__(self, master=None,  graph_type='rectangle', color='blue',  min_size=7, cnf={}, **kw):
         '''
         '''
         super().__init__(master, cnf, **kw)
         self.min_rect = Rectangle([0, 0, min_size, min_size])
+        self.move_bbox = ['none']*4
         self.graph_type, self.color = graph_type, color
         self.bind_tune(master)
         self.bunch = {}  # 记录 canvas 对象
         master.bind('<p>', self.print_bunch)
+        master.bind('<1>', self.select_graph)
+        self.tag_bind('helper', '<1>', self.start_move_selected)
+        self.tag_bind('center', '<ButtonRelease-1>', self.all_move_selected)
+        self.tag_bind('left_top_corner', '<ButtonRelease-1>', lambda e: self.scale_selected(e, [1, 1, 0, 0]))
+        self.tag_bind('right_bottom_corner', '<ButtonRelease-1>', lambda e: self.scale_selected(e, [0, 0, 1, 1]))
+        self.tag_bind('left_bottom_corner', '<ButtonRelease-1>', lambda e: self.scale_selected(e, [1, 0, 0, 1]))
+        self.tag_bind('right_top_corner', '<ButtonRelease-1>', lambda e: self.scale_selected(e, [0, 1, 1, 0]))
+        self.tag_bind('top_middle', '<ButtonRelease-1>', lambda e: self.scale_selected(e, [0, 1, 0, 0]))
+        self.tag_bind('bottom_middle', '<ButtonRelease-1>', lambda e: self.scale_selected(e, [0, 0, 0, 1]))
+        self.tag_bind('left_middle', '<ButtonRelease-1>', lambda e: self.scale_selected(e, [1, 0, 0, 0]))
+        self.tag_bind('right_middle', '<ButtonRelease-1>', lambda e: self.scale_selected(e, [0, 0, 1, 0]))
+        
 
     @property
     def record_bbox(self):
@@ -26,6 +39,58 @@ class _GraphCanvas(GraphMeta):
             return
         else:
             return Rectangle(_record_bbox)
+
+    def scale_selected(self, event, scale_bbox):
+        self.move_bbox[2:] = self._record_bbox[2:]
+        move_bbox = self.move_bbox
+        if 'none' not in move_bbox:
+            rect = Rectangle(move_bbox)
+            if rect:
+                bbox = list(self.bbox('selected'))
+                bbox[0] += rect.grad_x * scale_bbox[0]
+                bbox[1] += rect.grad_y * scale_bbox[1]
+                bbox[2] += rect.grad_x * scale_bbox[2]
+                bbox[3] += rect.grad_y * scale_bbox[3]
+                self.move('helper', rect.grad_x, rect.grad_y)
+                self.coords('selected', bbox)
+            self.dtag('selected')
+            self.delete('helper')
+
+    def start_move_selected(self, event):
+        self.move_bbox[:2] = self._record_bbox[2:]
+        self.unbind_drawing(self.master)
+        #self.master.unbind('Motion')
+
+    def all_move_selected(self, event):
+        self.move_bbox[2:] = self._record_bbox[2:]
+        move_bbox = self.move_bbox
+        if 'none' not in move_bbox:
+            rect = Rectangle(move_bbox)
+            if rect:
+                self.move('helper', rect.grad_x, rect.grad_y)
+                self.move('selected', rect.grad_x, rect.grad_y)
+            self.dtag('selected')
+            self.delete('helper')
+
+    def create_helper(self, rect):
+        r = 5
+        self.delete('helper')
+        for name, point in rect.bunch.items():
+            self.create_circle(point, r, tags=f'helper {name}', fill='khaki')
+        self.create_circle(rect.center, r, tags=f'helper center', fill='khaki')
+
+    def select_graph(self, event):
+        x, y = self._record_bbox[2:]
+        graph_id = self.find_closest(x, y)
+        tags = self.gettags(graph_id)
+        bbox = self.bbox(graph_id)
+        if bbox and 'graph' in tags:
+            rect = Rectangle(bbox)
+            width, height = rect.width, rect.height
+            graphs = self.find_overlapping(*bbox)
+            if (x, y) in rect:
+                self.create_helper(rect)
+                self.addtag_withtag('selected', graph_id)
 
     def print_bunch(self, *event):
         self.update_bunch(event)
@@ -64,18 +129,18 @@ class _GraphCanvas(GraphMeta):
     def drawing(self, width=1, tags=None, **kw):
         if self.record_bbox:
             self.delete('temp')
-            return self.mouse_draw_graph(width, tags, activedash=10, **kw)
+            if self.graph_type in ['line', 'point'] or not self.record_bbox <= self.min_rect:
+                return self.mouse_draw_graph(width, tags, activedash=10, **kw)
 
     def refresh_graph(self, event, **kw):
         if self.graph_type:
-            self.after(30, lambda: self.drawing(
-                width=2, tags='temp', dash=10, **kw))
+            self.after(5, lambda: self.drawing(
+                    width=2, tags='temp', dash=10, **kw))
 
     def finish_drawing(self, *event,  **kw):
         if self.graph_type:
             if self.record_bbox:
-                if self.graph_type in ['line', 'point'] or not self.record_bbox < self.min_rect:
-                    self.drawing(width=1, tags=None, **kw)
+                self.drawing(width=1, tags=None, **kw)
         self.reset(event)
 
     def reset(self, *event):

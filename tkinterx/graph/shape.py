@@ -1,3 +1,5 @@
+#from functools import lru_cache
+
 class Rectangle:
     def __init__(self, bbox):
         self.x0, self.y0, self.x1, self.y1 = bbox
@@ -13,13 +15,21 @@ class Rectangle:
         }
 
     @property
+    def grad_x(self):
+        return self.x1 - self.x0
+
+    @property
+    def grad_y(self):
+        return self.y1 - self.y0
+
+    @property
     def width(self):
-        return abs(self.x1 - self.x0)
+        return abs(self.grad_x)
 
     @property
     def height(self):
-        return abs(self.y1 - self.y0)
-        
+        return abs(self.grad_y)
+
     @property
     def center(self):
         x = (self.x0 + self.x1)/2
@@ -35,3 +45,7 @@ class Rectangle:
     def __lt__(self, other):
         '''self < other'''
         return self.width < other.width or self.height < other.height
+
+    def __le__(self, other):
+        '''self < other'''
+        return self.width <= other.width or self.height <= other.height
