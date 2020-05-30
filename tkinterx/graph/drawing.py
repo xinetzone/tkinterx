@@ -3,6 +3,7 @@ from tkinter import ttk, Toplevel
 from .canvas import GraphMeta
 from .shape import Rectangle
 from ..param import ParamDict
+from .generate_label import AskValueWindow
 
 
 class _GraphCanvas(GraphMeta):
@@ -21,6 +22,7 @@ class _GraphCanvas(GraphMeta):
         master.bind('<p>', self.print_bunch)
         master.bind('<1>', self.select_graph)
         self.tag_bind('helper', '<1>', self.start_move_selected)
+        self.tag_bind('selected', '<3>', self.ask_selected_value)
         self.tag_bind('center', '<ButtonRelease-1>', self.all_move_selected)
         self.tag_bind('left_top_corner', '<ButtonRelease-1>',
                       lambda e: self.scale_selected(e, [1, 1, 0, 0]))
@@ -38,6 +40,22 @@ class _GraphCanvas(GraphMeta):
                       lambda e: self.scale_selected(e, [1, 0, 0, 0]))
         self.tag_bind('right_middle', '<ButtonRelease-1>',
                       lambda e: self.scale_selected(e, [0, 0, 1, 0]))
+
+    def ask_selected_value(self, event=None):
+        try:
+            if self.label_window.state() == 'normal':
+                self.label_window.focus()
+        except:
+            self.label_window = AskValueWindow(self)
+        self.label_window.title('标签 工具')
+        self.label_window.transient(self)
+        self.wait_window(self.label_window)
+        print(self.bunch)
+        bunch = self.label_window.output
+        for graph_id in self.find_withtag('selected'):
+            value = self.bunch.get(graph_id)
+            if value:
+                self.bunch[graph_id].update({'label': bunch})
 
     @property
     def record_bbox(self):

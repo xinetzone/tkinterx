@@ -147,8 +147,6 @@ class GraphLoader(GraphFrame):
             self.draw_current_graph()
 
 
-
-
 class GraphWindow(Tk):
     def __init__(self, **kw):
         super().__init__(**kw)
