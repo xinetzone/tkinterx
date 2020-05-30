@@ -1,5 +1,5 @@
 from tkinter import Toplevel, ttk, Tk
-from tkinter import filedialog, StringVar, messagebox
+from tkinter import filedialog, StringVar, messagebox, IntVar
 
 
 def askokcancel(window, title='Do You need to exit?', message=None):
@@ -36,13 +36,16 @@ class TextMeta:
 
 
 class Row(TextMeta):
-    def __init__(self, master, ttk_type, text, **kw):
+    def __init__(self, master, ttk_type, text, var_type='str', **kw):
         '''
         :param ttk_type: 'ttk.Combobox', 'ttk.Label',  'ttk.Entry',
             'ttk.Menubutton', 'ttk.Spinbox', 'ttk.Button'
         '''
         super().__init__(master, ttk_type, **kw)
-        self.var = StringVar()
+        if var_type == 'int':
+            self.var = IntVar()
+        else:
+            self.var = StringVar()
         self.label = ttk.Label(master, text=text)
         self.entry = ttk_type(master, textvariable=self.var, **kw)
 

@@ -95,66 +95,27 @@ class CanvasMeta(Canvas):
 class GraphMeta(CanvasMeta):
     def __init__(self, master=None, cnf={}, **kw):
         '''
+        '''
+        super().__init__(master, cnf, **kw)
+        '''
         属性
         =====
         record_bbox: [x0, y0, x1, y1]，其中 (x0, y0) 为鼠标单击左键时的 canvas 坐标，当释放鼠标时恢复为 ['none']*2
             (x1, y1) 为鼠标在画布移动时的 canavas 坐标
         '''
-        super().__init__(master, cnf, **kw)
-        self.record_bbox = ['none']*4
-
-    def bind_normal(self):
-        self.bind('<1>', self.start_record)
+        super().__init__(master, **kw)
+        self._record_bbox = ['none']*4
         self.bind('<Motion>', self.update_xy)
-        self.bind('<ButtonRelease-1>', self.finish_record)
+        self.bind('<1>', self.start_record)
+
+    def start_record(self, event):
+        '''开始记录点击鼠标时的 canvas 坐标'''
+        self._record_bbox[:2] = self.get_canvasxy(event)
 
     def get_canvasxy(self, event):
         '''返回事件的 canvas 坐标'''
         return self.canvasx(event.x), self.canvasy(event.y)
 
-    def start_record(self, event):
-        '''开始记录点击鼠标时的 canvas 坐标'''
-        self.record_bbox[:2] = self.get_canvasxy(event)
-
     def update_xy(self, event):
         '''记录鼠标移动的 canvas 坐标'''
-        self.record_bbox[2:] = self.get_canvasxy(event)
-
-    def reset(self):
-        self.record_bbox[:2] = ['none']*2
-
-    def finish_record(self, event):
-        self.reset()
-        self.record_bbox_var.set(self.record_bbox)
-
-
-class GraphDrawing(GraphMeta):
-    def __init__(self, master=None, cnf={}, **kw):
-        '''
-        '''
-        super().__init__(master, cnf, **kw)
-
-    def bind_drawing(self):
-        self.bind('<1>', self.start_record)
-        self.bind('<Motion>', self.refresh_graph)
-        self.bind('<ButtonRelease-1>', self.finish_drawing)
-
-    def mouse_draw_graph(self, graph_type, color='blue', width=1, tags=None, **kw):
-        if graph_type == 'point':
-            return self.create_square_point(self.record_bbox[2:], color, width, tags, **kw)
-        else:
-            return self.create_graph(graph_type, self.record_bbox, color, width, tags, **kw)
-
-    def drawing(self, graph_type, color, width=1, tags=None, **kw):
-        self.delete('temp')
-        if 'none' not in self.record_bbox:
-            return self.mouse_draw_graph(graph_type, color, width, tags, activedash=10, **kw)
-
-    def finish_drawing(self, event, graph_type='rectangle', color='blue', width=1, tags=None, **kw):
-        self.drawing(graph_type, color, width=width, tags=None, **kw)
-        self.reset()
-
-    def refresh_graph(self, event, graph_type='rectangle', color='blue', **kw):
-        self.update_xy(event)
-        self.after(30, lambda: self.drawing(
-            graph_type, color, width=2, tags='temp', dash=10, **kw))
+        self._record_bbox[2:] = self.get_canvasxy(event)
