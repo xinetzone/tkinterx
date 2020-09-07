@@ -35,7 +35,8 @@ class SimpleGraph(CanvasMeta):
         self.fill = fill
 
     def draw(self, direction, tags=None, **kw):
-        return self.create_graph(self.shape, direction, self.color, self.width, tags, fill=self.fill, **kw)
+        kw.update({'color': self.color, 'width': self.width, 'tags': tags, 'fill':self.fill})
+        return self.create_graph(self.shape, direction, **kw)
 
     @property
     def default_tags(self):
@@ -157,7 +158,7 @@ class SelectorMeta(CanvasMeta):
                 self.create_graph(shape, bbox, fill=fill,
                                   tags=shape, width=width)
             else:
-                self.create_square_point([x, y], fill, width, tags=shape)
+                self.create_point([x, y], fill, width, tags=shape)
 
 
 class Selector(SelectorMeta):

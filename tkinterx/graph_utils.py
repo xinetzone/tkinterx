@@ -1,15 +1,15 @@
 from tkinter import ttk, filedialog, StringVar
 
 from .graph.canvas_design import Selector
-from .graph.drawing import ImageCanvas
+from .graph.painter import ImageCanvas
 from .image_utils import ImageLoader
 from .param import ParamDict
 from .utils import save_bunch, load_bunch, mkdir, FileFrame, FileNotebook
 
 
 class Graph(ImageCanvas):
-    def __init__(self, master=None, cnf={}, **kw):
-        super().__init__(master, cnf, **kw)
+    def __init__(self, master, selector, cnf={}, **kw):
+        super().__init__(master, selector, cnf, **kw)
         self.min_size = (10, 10)
         self.bunch = {}
         self.image_names = ()
@@ -18,16 +18,14 @@ class Graph(ImageCanvas):
         self.master.bind('<Control-s>', lambda event: self.save_graph('rectangle', event))
         self.master.bind('<Control-l>', self.load_graph)
 
-    def drawing(self, graph_type, color, width=1, tags=None, **kw):
+    def drawing(self, width=1, tags=None, **kw):
         self.delete('temp')
-        if 'none' not in self.record_bbox:
-            x0, y0, x1, y1 = self.record_bbox
-            stride_x = x1 - x0
-            stride_y = y1 - y0
+        if not self.record_bbox.isNull():
+            stride_x, stride_y = self.record_bbox.y - self.record_bbox.x
             cond_x = stride_x > self.min_size[0]
             cond_y = stride_y > self.min_size[1]
-            if (cond_x and cond_y) or graph_type in ['line', 'point']:
-                return self.mouse_draw_graph(graph_type, color, width, tags, activedash=10, **kw)
+            if (cond_x and cond_y) or self.shape in ['line', 'point']:
+                return self.mouse_draw_graph(width, tags, activedash=10, **kw)
 
     def create_notebook(self):
         self.notebook = FileNotebook(
