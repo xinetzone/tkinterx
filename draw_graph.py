@@ -1,5 +1,5 @@
 from tkinter import Tk
-from tkinterx.graph.drawing import Drawing
+from tkinterx.graph.painter import Drawing
 from tkinterx.graph_utils import ScrollableDrawing
 from tkinterx.window import GraphWindow
 
