@@ -127,10 +127,9 @@ class SelectorMeta(CanvasMeta):
         self.dtag('graph')
 
     def custom_color(self, *args):
-        # Pop-up color selection dialog box
-        select_color = colorchooser.askcolor(parent=self.master,
-                                             title="Please choose a color", color=self.color)
-        if select_color:
+        if select_color := colorchooser.askcolor(
+            parent=self.master, title="Please choose a color", color=self.color
+        ):
             self.color = select_color[1]
 
     def create_colors(self, x, y):

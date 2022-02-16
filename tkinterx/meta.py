@@ -42,10 +42,7 @@ class Row(TextMeta):
             'ttk.Menubutton', 'ttk.Spinbox', 'ttk.Button'
         '''
         super().__init__(master, ttk_type, **kw)
-        if var_type == 'int':
-            self.var = IntVar()
-        else:
-            self.var = StringVar()
+        self.var = IntVar() if var_type == 'int' else StringVar()
         self.label = ttk.Label(master, text=text)
         self.entry = ttk_type(master, textvariable=self.var, **kw)
 
@@ -137,6 +134,4 @@ class PopupLabel(WindowMeta):
         label = self.table['label']
         if '' in [label]:
             showwarning(self)
-        else:
-            pass
             #askokcancel(self, message='Do you want to confirm the submission?')

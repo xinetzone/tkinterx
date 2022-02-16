@@ -53,8 +53,7 @@ class _GraphCanvas(GraphMeta):
         print(self.bunch)
         bunch = self.label_window.output
         for graph_id in self.find_withtag('selected'):
-            value = self.bunch.get(graph_id)
-            if value:
+            if value := self.bunch.get(graph_id):
                 self.bunch[graph_id].update({'label': bunch})
 
     @property
@@ -93,8 +92,7 @@ class _GraphCanvas(GraphMeta):
         self.move_bbox[2:] = self._record_bbox[2:]
         move_bbox = self.move_bbox
         if 'none' not in move_bbox:
-            rect = Rectangle(move_bbox)
-            if rect:
+            if rect := Rectangle(move_bbox):
                 self.move('helper', rect.grad_x, rect.grad_y)
                 self.move('selected', rect.grad_x, rect.grad_y)
             self.dtag('selected')
@@ -108,7 +106,7 @@ class _GraphCanvas(GraphMeta):
         self.delete('helper')
         for name, point in rect.bunch.items():
             self.create_circle(point, r, tags=f'helper {name}', fill=color)
-        self.create_circle(rect.center, r, tags=f'helper center', fill=color)
+        self.create_circle(rect.center, r, tags='helper center', fill=color)
 
     @property
     def selected_current_graph(self):
@@ -178,9 +176,8 @@ class _GraphCanvas(GraphMeta):
                 width=2, tags='temp', dash=10, **kw))
 
     def finish_drawing(self, *event,  **kw):
-        if self.graph_type:
-            if self.record_bbox:
-                self.drawing(width=1, tags=None, **kw)
+        if self.graph_type and self.record_bbox:
+            self.drawing(width=1, tags=None, **kw)
         self.reset(event)
 
     def reset(self, *event):
@@ -212,10 +209,9 @@ class _GraphCanvas(GraphMeta):
         self.update_bunch(event)
 
     def tune_graph(self, event, strides):
-        bbox = self.bbox('current')
-        width = 1  # 图形的宽度
-        if bbox:
+        if bbox := self.bbox('current'):
             x0, y0, x1, y1 = bbox
+            width = 1  # 图形的宽度
             x0 += strides[0] + width
             y0 += strides[1] + width
             x1 += strides[2] - width

@@ -52,8 +52,7 @@ class CanvasMeta(Canvas):
         else:
             kwargs.update(kw)
         func = eval(f"self.create_{graph_type}")
-        graph_id = func(*direction, **kwargs)
-        return graph_id
+        return func(*direction, **kwargs)
 
     def _create_regular_graph(self, graph_type, center, radius, color='blue', width=1, tags=None, **kw):
         '''Used to create a circle or square.

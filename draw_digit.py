@@ -12,8 +12,8 @@ root.geometry(f'{W}x{H}')
 self = CanvasMeta(root, bg='gray')
 self.create_text([x, y], text=text, font='楷体 500', fill=fill)
 self.create_circle([x, y], r, width=80, color='red')
-row = int(W/spacing)
-column = int(H/spacing)
+row = W // spacing
+column = H // spacing
 for i in range(row):
     for j in range(column):
         self.create_square([i*spacing, j*spacing], spacing, width=2, color='yellowgreen')

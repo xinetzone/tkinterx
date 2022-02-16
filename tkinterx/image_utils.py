@@ -32,7 +32,7 @@ class ImageLoader:
         #self.name_dict = {name: k for k, name in enumerate(self.names)}
 
     def get_names(self, re_pattern):
-        return set([name.parts[-1] for name in self.root.glob(re_pattern)])
+        return {name.parts[-1] for name in self.root.glob(re_pattern)}
 
     @property
     def names(self):
