@@ -46,11 +46,7 @@ class GraphLoader(GraphFrame):
 
     def load_bunch(self):
         path = Path(self.default_path)
-        if path.exists():
-            bunch = load_bunch(path)
-        else:
-            bunch = {}
-        return bunch
+        return load_bunch(path) if path.exists() else {}
 
     def new_create(self, *event):
         DIR = Path(filedialog.askdirectory())
@@ -74,15 +70,12 @@ class GraphLoader(GraphFrame):
         self.bunch = self.load_bunch()
         if self.bunch.get('root'):
             self.canvas.update_current_root(Path(self.bunch['root']))
-            num = len(self.canvas.loader)
-            if num:
+            if num := len(self.canvas.loader):
                 self.canvas.update_background()
                 self.table['image_id'].var.set(0)
                 self.draw_current_graph()
-        else:
-            cats = self.bunch.get('default')
-            if cats:
-                self._draw_graph(cats)
+        elif cats := self.bunch.get('default'):
+            self._draw_graph(cats)
 
     def save_graph(self, *event):
         mkdir('data')
@@ -104,8 +97,7 @@ class GraphLoader(GraphFrame):
             self.canvas.create_graph(activedash=10, **param)
 
     def draw_graph(self, name):
-        cats = self.bunch.get(name)
-        if cats:
+        if cats := self.bunch.get(name):
             params = self.cat2params(cats)
             for param in params:
                 self.canvas.create_graph(activedash=10, **param)
@@ -118,8 +110,7 @@ class GraphLoader(GraphFrame):
         self.save_graph(event)
         self.canvas.clear_graph(event)
         current_image_id = self.table['image_id'].var.get()
-        num = self.canvas.num_loader
-        if num:
+        if num := self.canvas.num_loader:
             if current_image_id in [str(k) for k in range(-num, num)]:
                 self.canvas.loader.current_id = int(current_image_id)
             self.canvas.update_background()
